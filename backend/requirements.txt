@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+tree-sitter
+tree-sitter-python
+tree-sitter-javascript
+tree-sitter-typescript
+tree-sitter-java
+tree-sitter-cpp
+tree-sitter-c
