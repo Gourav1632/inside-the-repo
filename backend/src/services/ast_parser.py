@@ -1,4 +1,5 @@
 import os
+from typing import Dict, List, Optional, Any
 from tree_sitter import Language, Parser
 import subprocess
 import tempfile
@@ -8,6 +9,10 @@ import tree_sitter_cpp as tscpp
 import tree_sitter_javascript as tsjavascript
 import tree_sitter_python as tspython
 import tree_sitter_typescript as tstypescript
+from src.config.language_node_maps import language_node_maps
+from src.services.file_graph_generator import build_dependency_graph
+from src.services.git_utils import extract_owner_repo,get_repo_tree,download_file,get_file_git_info
+
 
 LANGUAGE_GRAMMARS = {
     "python": tspython.language(),
@@ -45,133 +50,225 @@ def get_parser(language):
     except TypeError:
         raise ValueError(f"Invalid grammar path for {language}: {grammar_path}")
 
+
+
+def calculate_complexity(node):
+    """Calculate simplified cyclomatic complexity"""
+    complexity = 1
+    stack = [node]
+    while stack:
+        current = stack.pop()
+        if current.type in ("if_statement", "for_statement", "while_statement"):
+            complexity += 1
+        stack.extend(current.children)
+    return complexity
+
+def is_third_party_module(module_name):
+    return not module_name.startswith(".")  # simple check for relative imports
+
+def extract_import_data(node, code):
+    import_info = {
+        "content": code[node.start_byte:node.end_byte],
+        "start_line": node.start_point[0] + 1,
+        "source_module": None,
+        "imported_items": [],
+        "metadata": {
+            "type": None,
+            "is_third_party": False
+        }
+    }
+
+    for child in node.children:
+        if child.type == 'string':
+            import_info["source_module"] = child.text.decode().strip('"').strip("'")
+            import_info["metadata"]["is_third_party"] = is_third_party_module(import_info["source_module"])
+
+        elif child.type == 'import_clause':
+            for sub in child.children:
+                if sub.type == 'identifier':
+                    import_info["imported_items"].append(sub.text.decode())
+                    import_info["metadata"]["type"] = 'default'
+                elif sub.type == 'named_imports':
+                    import_info["metadata"]["type"] = 'named'
+                    for ni in sub.named_children:
+                        if ni.type == 'import_specifier':
+                            name_node = ni.child_by_field_name('name')
+                            if name_node:
+                                import_info["imported_items"].append(name_node.text.decode())
+                elif sub.type == 'namespace_import':
+                    import_info["metadata"]["type"] = 'namespace'
+                    as_node = sub.child_by_field_name('name')
+                    if as_node:
+                        import_info["imported_items"].append('* as ' + as_node.text.decode())
+
+    return import_info
+
+
 def detect_file_language(filename: str):
     for language, extensions in LANGUAGE_FILE_EXTENSIONS.items():
         if any(filename.endswith(ext) for ext in extensions):
             return language
     return None
 
+
+
+def extract_methods(node):
+    """Helper function to extract methods from a class node."""
+    methods = []
+    for child in node.children:
+        if child.type in ["function_definition", "method_definition"]:
+            method_name = child.child_by_field_name("name").text.decode()
+            methods.append(method_name)
+    return methods
+
+def extract_callee_name(call_node):
+    """
+    Given a call_expression node, extract a readable callee name.
+    """
+    callee_node = call_node.child_by_field_name("function") or call_node.child_by_field_name("callee") or call_node.children[0]
+
+    if callee_node is None:
+        callee_node = call_node.children[0]
+
+    return get_node_name(callee_node)
+
+def get_node_name(node):
+    """
+    Recursively convert a node to a string representing the callee name.
+    Supports identifiers, member expressions, etc.
+    """
+    if node.type == "identifier":
+        return node.text.decode()
+
+    if node.type == "member_expression":
+        # example: obj.method or obj.prop.method
+        object_node = node.child_by_field_name("object")
+        property_node = node.child_by_field_name("property")
+        object_name = get_node_name(object_node) if object_node else ""
+        property_name = get_node_name(property_node) if property_node else ""
+        if object_name and property_name:
+            return f"{object_name}.{property_name}"
+        return object_name or property_name
+
+    if node.type == "call_expression":
+        # nested call like foo()()
+        return extract_callee_name(node)
+
+    # add more cases as needed...
+
+    # fallback: raw source text if no better representation
+    return node.text.decode()
+
 def parse_code(repo_url: str, branch: str):
-    with tempfile.TemporaryDirectory() as repo_dir:
-        try:
-            subprocess.run(["git", "clone", "--branch", branch, "--single-branch", repo_url, repo_dir], check=True)
-            code_structure = {}
 
-            for root, _, files in os.walk(repo_dir):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    language = detect_file_language(file)
-                    if not language or language not in LANGUAGE_GRAMMARS:
-                        continue
+    owner, repo = extract_owner_repo(repo_url)
+    tree = get_repo_tree(owner,repo, branch)
 
-                    parser = get_parser(language)
-                    if not parser:
-                        continue
+    result = {}
+    with tempfile.TemporaryDirectory() as tmpdir:
 
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            code = f.read()
-                        tree = parser.parse(code.encode('utf-8'))
-                        root_node = tree.root_node
+        for item in tree:
+            if item["type"] != "blob":
+                continue
+            
+            path = item["path"]
 
-                        extracted_info = {
-                            "functions": [],
-                            "classes": [],
-                            "variables": [],
-                            "comments": [],
-                            "imports": [],
-                            "literals": [],
-                            "conditionals": [],
-                            "loops": [],
-                            "error_handling": [],
-                            "return_statements": [],
-                            "method_calls": [],
-                            "annotations": [],
-                            "access_modifiers": [],
-                            "control_flow_keywords": []  # <-- new feature
-                        }
+            language = detect_file_language(path)
+            if not language or language not in LANGUAGE_GRAMMARS:
+                continue
 
-                        def traverse(node):
-                            node_text = code[node.start_byte:node.end_byte]
-                            start_line = node.start_point[0]
-                            end_line = node.end_point[0]
+            parser = get_parser(language)
+            if not parser:
+                continue
 
-                            node_info = {
-                                "text": node_text,
-                                "line": [start_line, end_line]  # line number range
+            try:
+                code = download_file(owner, repo, path, branch)
+                tree = parser.parse(code.encode('utf-8'))
+
+                extracted_info = {
+                    "language":language,
+                    "imports":[],
+                    "classes":[],
+                    "functions":[],
+                    "git_info": {
+                    "commit_count": 0,
+                    "last_modified": None,
+                    "recent_commits": [],
+                    },
+                    "calls": [] 
+                }
+
+                extracted_info["git_info"] = get_file_git_info(owner,repo , branch, path)
+
+
+                current_function = None
+                def traverse(node):
+                    nonlocal current_function
+                    node_text = code[node.start_byte:node.end_byte]
+                    start_line = node.start_point[0] + 1  # 1-based line numbering
+                    node_type = node.type
+                    node_map = language_node_maps.get(language, {})
+
+
+                    # Handle import extraction
+                    if node_type in node_map.get('imports',[]):
+                        import_info = extract_import_data(node, code)
+                        extracted_info["imports"].append(import_info)
+
+                    # Handle class extraction
+                    if node_type in node_map.get('classes', []):
+                        class_info = {
+                            "name": node.child_by_field_name("name").text.decode(),
+                            "content": node_text,
+                            "start_line": start_line,
+                            "methods": extract_methods(node),
+                            "metadata": {
+                                "type": node_type,
+                                "complexity": calculate_complexity(node)
                             }
-                            t = node.type
-                            if language == "python":
-                                if t == 'function_definition': extracted_info["functions"].append(node_info)
-                                elif t == 'class_definition': extracted_info["classes"].append(node_info)
-                                elif t == 'identifier': extracted_info["variables"].append(node_info)
-                                elif t == 'comment': extracted_info["comments"].append(node_info)
-                                elif t == 'import': extracted_info["imports"].append(node_info)
-                                elif t == 'string': extracted_info["literals"].append(node_info)
-                                elif t in ['if_statement', 'elif_statement']: extracted_info["conditionals"].append(node_info)
-                                elif t in ['while_statement', 'for_statement']: extracted_info["loops"].append(node_info)
-                                elif t == 'try_statement': extracted_info["error_handling"].append(node_info)
-                                elif t == 'return_statement': extracted_info["return_statements"].append(node_info)
-                                elif t == 'call': extracted_info["method_calls"].append(node_info)
-                                elif t == 'decorator': extracted_info["annotations"].append(node_info)
-                                elif t in ['public', 'private', 'protected']: extracted_info["access_modifiers"].append(node_info)
-                                elif t in ['break_statement', 'continue_statement', 'pass_statement']: extracted_info["control_flow_keywords"].append(node_info)
+                        }
+                        extracted_info["classes"].append(class_info)
 
-                            elif language in ["javascript", "typescript", "tsx"]:
-                                if t in ['function_declaration', 'function_expression']: extracted_info["functions"].append(node_info)
-                                elif t == 'class_declaration': extracted_info["classes"].append(node_info)
-                                elif t == 'identifier': extracted_info["variables"].append(node_info)
-                                elif t == 'comment': extracted_info["comments"].append(node_info)
-                                elif t == 'import_declaration': extracted_info["imports"].append(node_info)
-                                elif t == 'string_literal': extracted_info["literals"].append(node_info)
-                                elif t in ['if_statement', 'else_statement']: extracted_info["conditionals"].append(node_info)
-                                elif t in ['while_statement', 'for_statement']: extracted_info["loops"].append(node_info)
-                                elif t == 'try_statement': extracted_info["error_handling"].append(node_info)
-                                elif t == 'return_statement': extracted_info["return_statements"].append(node_info)
-                                elif t == 'call_expression': extracted_info["method_calls"].append(node_info)
-                                elif t == 'decorator': extracted_info["annotations"].append(node_info)
-                                elif t in ['public', 'private', 'protected']: extracted_info["access_modifiers"].append(node_info)
-                                elif t in ['break_statement', 'continue_statement']: extracted_info["control_flow_keywords"].append(node_info)
+                    # Handle functions
+                    if node_type in node_map.get('functions', []):
+                        name_node = node.child_by_field_name("name")
+                        name = name_node.text.decode() if name_node else "<anonymous>"
+                        current_function = name
+                        func_info = {
+                            "name": name_node.text.decode() if name_node else "<anonymous>",
+                            "content": node_text,
+                            "start_line": start_line,
+                            "metadata": {
+                                "type": node_type,
+                                "complexity": calculate_complexity(node)
+                            }
+                        }
+                        extracted_info["functions"].append(func_info)
+                    
+                    # Handle calls
+                    if node_type in node_map.get('calls', []):
+                        caller = current_function  # track this while traversing
+                        callee_name = extract_callee_name(node)
+                        extracted_info["calls"].append({
+                            "caller": caller,
+                            "callee": callee_name,
+                            "location": {
+                                "line": node.start_point[0] + 1,
+                                "column": node.start_point[1] + 1
+                            }
+                        })
 
-                            elif language == "java":
-                                if t == 'method_declaration': extracted_info["functions"].append(node_info)
-                                elif t == 'class_declaration': extracted_info["classes"].append(node_info)
-                                elif t == 'variable_declarator': extracted_info["variables"].append(node_info)
-                                elif t == 'comment': extracted_info["comments"].append(node_info)
-                                elif t == 'import_declaration': extracted_info["imports"].append(node_info)
-                                elif t == 'string_literal': extracted_info["literals"].append(node_info)
-                                elif t in ['if_statement', 'else_statement']: extracted_info["conditionals"].append(node_info)
-                                elif t in ['while_statement', 'for_statement']: extracted_info["loops"].append(node_info)
-                                elif t == 'try_statement': extracted_info["error_handling"].append(node_info)
-                                elif t == 'return_statement': extracted_info["return_statements"].append(node_info)
-                                elif t == 'method_invocation': extracted_info["method_calls"].append(node_info)
-                                elif t == 'annotation': extracted_info["annotations"].append(node_info)
-                                elif t in ['public', 'private', 'protected']: extracted_info["access_modifiers"].append(node_info)
-                                elif t in ['break_statement', 'continue_statement']: extracted_info["control_flow_keywords"].append(node_info)
+                    # Handle other node types similarly...
+                    for child in node.children:
+                        traverse(child)
 
-                            elif language in ["cpp", "c"]:
-                                if t == 'function_definition': extracted_info["functions"].append(node_info)
-                                elif t == 'class_specifier': extracted_info["classes"].append(node_info)
-                                elif t == 'identifier': extracted_info["variables"].append(node_info)
-                                elif t == 'comment': extracted_info["comments"].append(node_info)
-                                elif t == 'preproc_include': extracted_info["imports"].append(node_info)
-                                elif t == 'string_literal': extracted_info["literals"].append(node_info)
-                                elif t in ['if_statement', 'else_statement']: extracted_info["conditionals"].append(node_info)
-                                elif t in ['while_statement', 'for_statement']: extracted_info["loops"].append(node_info)
-                                elif t == 'try_statement': extracted_info["error_handling"].append(node_info)
-                                elif t == 'return_statement': extracted_info["return_statements"].append(node_info)
-                                elif t == 'call_expression': extracted_info["method_calls"].append(node_info)
-                                elif t in ['public', 'private', 'protected']: extracted_info["access_modifiers"].append(node_info)
-                                elif t in ['break_statement', 'continue_statement']: extracted_info["control_flow_keywords"].append(node_info)
-
-                            for child in node.children:
-                                traverse(child)
-
-                        traverse(root_node)
-                        code_structure[file_path] = {"language": language, **extracted_info}
-
-                    except Exception as e:
-                        print(f"Error parsing {file_path}: {e}")
-        except subprocess.CalledProcessError as e:
-            print(f"Git clone failed: {e}")
-        return code_structure
+                traverse(tree.root_node)
+                result[path] = extracted_info
+            except Exception as e:
+                print(f"Error processing {path}: {e}")
+            
+        graph = build_dependency_graph(result)
+        return {
+            "ast":result,
+            "dependency_graph":graph
+        }
