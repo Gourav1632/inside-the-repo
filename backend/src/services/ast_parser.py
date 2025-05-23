@@ -160,9 +160,10 @@ def get_node_name(node):
     return node.text.decode()
 
 def parse_code(repo_url: str, branch: str):
-
+    print("Parsing repo ...")
     owner, repo = extract_owner_repo(repo_url)
     tree = get_repo_tree(owner,repo, branch)
+    print("Got the repo tree")
 
     result = {}
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -172,6 +173,7 @@ def parse_code(repo_url: str, branch: str):
                 continue
             
             path = item["path"]
+            norm_path = os.path.normpath(path)
 
             language = detect_file_language(path)
             if not language or language not in LANGUAGE_GRAMMARS:
@@ -232,10 +234,10 @@ def parse_code(repo_url: str, branch: str):
                     # Handle functions
                     if node_type in node_map.get('functions', []):
                         name_node = node.child_by_field_name("name")
-                        name = name_node.text.decode() if name_node else "<anonymous>"
+                        name = name_node.text.decode() if name_node else f"<anonymous>:Line-{start_line}"
                         current_function = name
                         func_info = {
-                            "name": name_node.text.decode() if name_node else "<anonymous>",
+                            "name": name_node.text.decode() if name_node else f"<anonymous>:Line-{start_line}",
                             "content": node_text,
                             "start_line": start_line,
                             "metadata": {
@@ -263,10 +265,11 @@ def parse_code(repo_url: str, branch: str):
                         traverse(child)
 
                 traverse(tree.root_node)
-                result[path] = extracted_info
+                result[norm_path] = extracted_info
             except Exception as e:
                 print(f"Error processing {path}: {e}")
             
+        print("Repo parsed successfully...")
         graph = build_dependency_graph(result)
         return {
             "ast":result,

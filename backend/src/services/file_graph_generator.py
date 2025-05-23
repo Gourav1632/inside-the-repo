@@ -1,42 +1,62 @@
 import os
-import networkx as nx
-
+import random
 
 def build_dependency_graph(ast_dict):
-    G = nx.DiGraph()
+    print("Building dependency graph")
+    nodes = {}
+    edges = []
 
-    # Supported extensions for your project
-    supported_extensions = (".js", ".jsx", ".ts", ".tsx", ".c", ".cpp", ".py")
+    # Normalize and strip extensions from known files
+    ast_files_no_ext = {
+        os.path.splitext(os.path.normpath(path))[0]
+        for path in ast_dict.keys()
+    }
 
     for file_path, file_info in ast_dict.items():
         norm_file_path = os.path.normpath(file_path)
-        G.add_node(norm_file_path)
+        file = os.path.splitext(norm_file_path)[0]
 
-        for imp in file_info.get("imports", []):
-            if not imp["metadata"]["is_third_party"]:
+        # Create node if not already added
+        if file not in nodes:
+            nodes[file] = {
+                "id": file,
+                "data": { "label": os.path.basename(file) },
+                "position": { "x": random.randint(0, 800), "y": random.randint(0, 800) }
+            }
+
+        for import_file in file_info.get("imports", []):
+            if not import_file["metadata"].get("is_third_party", False):
                 base_dir = os.path.dirname(norm_file_path)
-                import_path = os.path.normpath(os.path.join(base_dir, imp["source_module"]))
+                source_module = import_file.get("source_module")
 
-                # If no known extension, try to match source file's extension
-                if not import_path.endswith(supported_extensions):
-                    ext = os.path.splitext(norm_file_path)[1]
-                    if ext in supported_extensions:
-                        import_path += ext
-                    else:
-                        import_path += ".js"  # fallback extension
+                if not source_module:
+                    continue
 
-                G.add_edge(norm_file_path, import_path)
+                import_path = os.path.normpath(os.path.join(base_dir, source_module))
+                source_file = os.path.splitext(import_path)[0]
 
-    print("\nFinished building dependency graph.")
-    print(f"Total nodes: {len(G.nodes())}, Total edges: {len(G.edges())}")
-    return graph_to_json(G)
+                if source_file in ast_files_no_ext:
+                    # Add edge
+                    edge_id = f"{source_file}->{file}"
+                    edges.append({
+                        "id": edge_id,
+                        "source": source_file,
+                        "target": file,
+                        "animated": True
+                    })
 
+                    # Ensure source node is also created
+                    if source_file not in nodes:
+                        nodes[source_file] = {
+                            "id": source_file,
+                            "data": { "label": os.path.basename(source_file) },
+                            "position": { "x": random.randint(0, 800), "y": random.randint(0, 800) }
+                        }
 
-def graph_to_json(graph: nx.DiGraph):
+    print("\n✅ React Flow dependency graph built.")
+    print(f"Total nodes: {len(nodes)}, Total edges: {len(edges)}")
+
     return {
-        "nodes": list(graph.nodes),
-        "edges": [{"source": u, "target": v} for u, v in graph.edges]
+        "nodes": list(nodes.values()),
+        "edges": edges
     }
-
-
-

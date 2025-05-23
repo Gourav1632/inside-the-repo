@@ -1,0 +1,94 @@
+'use client';
+import { GridBackground } from '@/components/GridBackground';
+import React, { useEffect, useState } from 'react';
+import { FileCodeViewer } from '@/components/FileAnalysis/FileCodeViewer';
+import { Analysis } from '@/components/FileAnalysis/Analysis';
+import Loading from '@/components/Loading';
+import { motion } from 'framer-motion';
+
+function FileAnalysis() {
+  const [fileAnalysis, setFileAnalysis] = useState<any>(null);
+  const [currentFile, setCurrentFile] = useState<string>("");
+  const [AST, setAST] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("Retrieving file contents...");
+
+  useEffect(() => {
+    const file = localStorage.getItem("lastUsedFile");
+    if (!file) {
+      setMessage("No file selected. Please select a file from architecture map.");
+      return;
+    }
+
+    const storedData = localStorage.getItem("repoAnalysis");
+    if (file && storedData) {
+      const parsed = JSON.parse(storedData);
+      const astForFile = parsed?.repo_analysis?.ast?.[file];
+
+      setCurrentFile(file);
+      if (astForFile) {
+        setAST(astForFile);
+      } else {
+        console.warn("AST not found for file:", file);
+      }
+    }
+
+    const storageKey = `fileAnalysis-${file}`;
+    const stored = localStorage.getItem(storageKey);
+
+    if (stored) {
+      setFileAnalysis(JSON.parse(stored));
+    }
+
+    setLoading(false);
+  }, []);
+
+  if (loading) return <div><Loading message={message} /></div>;
+
+  return (
+    <div className='h-screen flex justify-center items-center w-full relative'>
+      <GridBackground />
+      
+      <motion.h1
+        className="text-xl lg:text-3xl fixed z-20 top-10 left-10 font-bold text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
+          File Analysis
+        </span>: {currentFile}
+      </motion.h1>
+
+      <motion.div
+        className="flex h-[70vh] w-[80%] gap-4 justify-center items-center"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <motion.div
+          className="z-10 w-full h-full flex justify-center items-center"
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Analysis fileAnalysis={fileAnalysis?.analysis} AST={AST} />
+        </motion.div>
+
+        <motion.div
+          className="max-w-xl h-full flex justify-center items-center w-full"
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <FileCodeViewer
+            language={fileAnalysis?.analysis.language}
+            code={fileAnalysis?.analysis.code}
+          />
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default FileAnalysis;

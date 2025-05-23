@@ -1,0 +1,65 @@
+'use client';
+import { GridBackground } from '@/components/GridBackground';
+import React, { useEffect, useState } from 'react';
+import DependencyGraph from '@/components/Graph/DependencyGraph';
+import Loading from '@/components/Loading';
+import { motion } from 'framer-motion';
+
+function DependencyPage() {
+  const [fileAnalysis, setFileAnalysis] = useState<any>(null);
+  const [currentFile, setCurrentFile] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('Retrieving file contents...');
+
+  useEffect(() => {
+    const file = localStorage.getItem('lastUsedFile');
+    if (!file) {
+      setMessage('No file selected. Please select a file from architecture map.');
+      setLoading(false);
+      return;
+    }
+
+    setCurrentFile(file); // also stores for display
+    const storageKey = `fileAnalysis-${file}`;
+    const stored = localStorage.getItem(storageKey);
+
+    if (stored) {
+      setFileAnalysis(JSON.parse(stored));
+    }
+    setLoading(false);
+  }, []);
+
+  if (loading) return <Loading message={message} />;
+
+  return (
+    <div className="h-screen w-full relative">
+      <GridBackground />
+
+      <h1 className="text-xl lg:text-3xl fixed z-20 top-10 left-10 font-bold text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
+        <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
+          File Graph
+        </span>
+        : {currentFile}
+      </h1>
+
+      <div className="relative z-10 h-full w-full">
+        {fileAnalysis?.file_graph?.nodes?.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="h-full w-full"
+          >
+            <DependencyGraph analysis={fileAnalysis} />
+          </motion.div>
+        ) : (
+          <div className="relative z-20 bg-gradient-to-b h-screen flex justify-center items-center from-neutral-200 to-neutral-500 bg-clip-text py-8 text-xl font-bold text-transparent">
+            No file graph available.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default DependencyPage;

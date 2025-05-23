@@ -1,116 +1,118 @@
 from collections import defaultdict
 import networkx as nx
+import os
+import random
 
 def build_per_file_graph(file_path: str, file_ast: dict) -> dict:
-    nodes = []
+    nodes = {}
     edges = []
 
+    file = os.path.splitext(file_path)[0]
     # Root node
-    nodes.append({
-        "id": file_path,
-        "label": file_path.split("\\")[-1],
-        "type": "file",
-        "title": f"File: {file_path}"
-    })
+    nodes[file]= {
+        "id": file,
+        "data":{"label":os.path.basename(file)},
+        "position": {"x":random.randint(0,800), "y":random.randint(0,800)}
+    }
 
     anon_counter = defaultdict(int)
 
     # Functions
     for func in file_ast.get("functions", []):
-        name = func["name"] or "<anonymous>"
-        if name == "<anonymous>":
-            anon_counter[func["start_line"]] += 1
-            name += f"@{func['start_line']}_{anon_counter[func['start_line']]}"
+        name = func["name"]
 
         func_id = f"{file_path}::function::{name}"
-        nodes.append({
+        nodes[func_id] = {
             "id": func_id,
-            "label": func["name"] or "<anonymous>",
-            "type": "function",
-            "title": f"Function: {func['name'] or '<anonymous>'}\nStart line: {func.get('start_line', '?')}"
-        })
+            "data":{"label":func["name"]},
+            "position": {"x":random.randint(0,800), "y":random.randint(0,800)}
+        }
+        edge_id = f"{file}->{func_id}"
         edges.append({
-            "from": file_path,
-            "to": func_id,
-            "type": "contains"
+            "id":edge_id,
+            "source": file,
+            "target": func_id,
+            "animated": True
         })
 
     # Classes and methods
     for cls in file_ast.get("classes", []):
         class_id = f"{file_path}::class::{cls['name']}"
-        nodes.append({
+        nodes[class_id] = {
             "id": class_id,
-            "label": cls["name"],
-            "type": "class",
-            "title": f"Class: {cls['name']}\nStart line: {cls.get('start_line', '?')}"
-        })
+            "data":{"label":cls["name"]},
+            "position": {"x":random.randint(0,800), "y":random.randint(0,800)}
+        }
+        edge_id = f"{file}->{class_id}"
         edges.append({
-            "from": file_path,
-            "to": class_id,
-            "type": "contains"
+            "id":edge_id,
+            "source": file,
+            "target": class_id,
+            "animated": True
         })
 
         for method in cls.get("methods", []):
             method_id = f"{class_id}::method::{method['name']}"
-            nodes.append({
+            nodes[method_id] = {
                 "id": method_id,
-                "label": method["name"],
-                "type": "method",
-                "title": f"Method: {method['name']}\nStart line: {method.get('start_line', '?')}"
-            })
+                "data":{"label":method["name"]},
+                "position": {"x":random.randint(0,800), "y":random.randint(0,800)}
+            }
+            edge_id = f"{class_id}->{method_id}"
             edges.append({
-                "from": class_id,
-                "to": method_id,
-                "type": "contains"
+                "id":edge_id,
+                "source": class_id,
+                "target": method_id,
+                "animated": True
             })
-
-    # Call edges
-    for call in file_ast.get("calls", []):
-        caller = f"{file_path}::function::{call['caller']}"
-        callee = f"{file_path}::function::{call['callee']}"
-        edges.append({
-            "from": caller,
-            "to": callee,
-            "type": "calls"
-        })
 
     return {
-        "nodes": nodes,
+        "nodes": list(nodes.values()),
         "edges": edges
     }
 
-
-
-def build_call_graph(file_ast):
-    nodes_set = set()
+def build_call_graph(file_ast, file_path="callgraph"):
+    nodes_dict = {}
     edges = []
 
     calls = file_ast.get("calls", [])
+    
+    # For generating random positions
+    def random_pos():
+        return {"x": random.randint(0, 800), "y": random.randint(0, 800)}
 
+    # Track duplicates so that nodes are unique
     for call in calls:
         caller = call.get("caller", "<unknown>")
         callee = call.get("callee", "<unknown>")
-        location = call.get("location", {})
 
-        # Collect nodes
-        nodes_set.add(caller)
-        nodes_set.add(callee)
+        # Create caller node if not exists
+        if caller not in nodes_dict:
+            nodes_dict[caller] = {
+                "id": caller,
+                "data": {"label": caller},
+                "position": random_pos()
+            }
+        # Create callee node if not exists
+        if callee not in nodes_dict:
+            nodes_dict[callee] = {
+                "id": callee,
+                "data": {"label": callee},
+                "position": random_pos()
+            }
 
-        # Build edge dict
-        edge = {
-            "from": caller,
-            "to": callee,
+        # Create edge id uniquely
+        edge_id = f"{caller}->{callee}"
+
+        edges.append({
+            "id": edge_id,
+            "source": caller,
+            "target": callee,
+            "animated": True,
             "type": "calls"
-        }
-        if location:
-            edge["location"] = location
-        edges.append(edge)
+        })
 
-    # Build nodes list from unique node names
-    nodes = [{
-        "id": n,
-        "label": n,
-    } for n in nodes_set]
+    nodes = list(nodes_dict.values())
 
     return {
         "nodes": nodes,
