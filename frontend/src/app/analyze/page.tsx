@@ -60,16 +60,20 @@ const tabs = [
 
 
   return (
-    <div className="h-screen w-full relative flex items-center justify-center text-white overflow-hidden">
+    <div className="h-screen w-full relative flex flex-col items-center  text-white overflow-auto">
+      <div className="fixed h-screen w-full">
       <GridBackground />
+      </div>
 
       {/* Main Welcome Panel */}
+      <div className='p-10'>
+
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: 'easeOut' }}
-        className="-mt-16 z-10 max-w-3xl px-6 py-8 bg-neutral-900 backdrop-blur-md rounded-2xl shadow-xl"
-      >
+        className=" z-10 max-w-3xl px-6 py-8 bg-neutral-900 backdrop-blur-md rounded-2xl shadow-xl"
+        >
         <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-400">
           <span className='text-white'>Welcome to</span> Into the repo!
         </h1>
@@ -88,7 +92,10 @@ const tabs = [
           You're all set to begin your journey. 🚀
         </p>
       </motion.div>
+          </div>
     </div>
+
+    
   );
 }
 

@@ -11,6 +11,7 @@ function Tutorial() {
   const [currentFile, setCurrentFile] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Retrieving file contents...');
+  const [showCodeViewer, setShowCodeViewer] = useState(false);
 
   useEffect(() => {
     const file = localStorage.getItem('lastUsedFile');
@@ -56,15 +57,32 @@ function Tutorial() {
   const highlightLines = extractHighlightedLines();
 
   return (
-    <div className="h-screen flex justify-center items-center w-full relative">
+    <div className="h-screen flex flex-col items-center w-full relative overflow-y-auto scroll-smooth">
       <GridBackground />
-      <h1 className="text-xl lg:text-3xl fixed z-20 top-10 left-10 font-bold text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
-        <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
-          Tutorial
-        </span>
-        : {currentFile}
-      </h1>
 
+      {/* Heading */}
+      <motion.h1
+        className="relative text-xl w-full text-left p-10 lg:text-3xl z-20 font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
+          Tutorial:
+        </span> <span className='break-all'>{currentFile}</span>
+      </motion.h1>
+
+      {/* Mobile Toggle Button */}
+      {!showCodeViewer && (
+        <button
+          className="fixed top-20 right-6 z-30 bg-purple-600 text-white px-4 py-2 rounded-full shadow-md lg:hidden"
+          onClick={() => setShowCodeViewer(true)}
+        >
+          View Code
+        </button>
+      )}
+
+      {/* Main Tutorial Content */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -87,11 +105,12 @@ function Tutorial() {
           </div>
         )}
 
+        {/* Code viewer for desktop */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-          className="max-w-xl h-full flex justify-center items-center w-full"
+          className="max-w-xl h-full flex justify-center items-center w-full hidden lg:flex"
         >
           <FileCodeViewer
             language={fileAnalysis?.analysis.language}
@@ -99,6 +118,28 @@ function Tutorial() {
             highlightLines={highlightLines}
           />
         </motion.div>
+      </motion.div>
+
+      {/* Slide-in Code Viewer for Mobile */}
+      <motion.div
+        className="fixed top-0 right-0 h-full w-full sm:w-[90vw] bg-[#121212] z-40 p-4 lg:hidden"
+        initial={{ x: '100%' }}
+        animate={{ x: showCodeViewer ? 0 : '100%' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setShowCodeViewer(false)}
+            className="text-white bg-neutral-700 px-3 py-1 rounded-md"
+          >
+            Close
+          </button>
+        </div>
+        <FileCodeViewer
+          language={fileAnalysis?.analysis.language}
+          code={fileAnalysis?.analysis.code}
+          highlightLines={highlightLines}
+        />
       </motion.div>
     </div>
   );

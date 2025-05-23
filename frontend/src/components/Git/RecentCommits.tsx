@@ -33,7 +33,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({ recent_commits }) 
               <span>By <span className="text-neutral-300">{commit.author}</span></span> •{' '}
               <span>{new Date(commit.date).toLocaleString()}</span>
             </div>
-            <div className="text-xs text-neutral-500 mt-1">Commit: {commit.sha}</div>
+            <div className="text-xs text-neutral-500 mt-1 break-all">Commit: {commit.sha}</div>
           </li>
         ))}
       </ul>

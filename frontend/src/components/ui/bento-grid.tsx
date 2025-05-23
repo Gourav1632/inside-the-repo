@@ -34,10 +34,9 @@ export const BentoGridItem = ({
 }) => {
     if(title=="File Summary"){
         return (
-          // bg-neutral-900 rounded-xl py-6 shadow-lg w-full h-full max-w-2xl border border-neutral-700 text-white
           <div
             className={cn(
-              "group/bento  custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
+              "group/bento max-h-[300px] md:max-h-full  custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
               className,
             )}
           >
@@ -57,7 +56,7 @@ export const BentoGridItem = ({
         return (
           <div
             className={cn(
-              "group/bento  custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
+              "group/bento  max-h-[300px] md:max-h-full custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
               className,
             )}
           >
@@ -91,7 +90,7 @@ export const BentoGridItem = ({
         return (
           <div
             className={cn(
-              "group/bento  custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
+              "group/bento max-h-[300px] md:max-h-full custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
               className,
             )}
           >
@@ -122,7 +121,7 @@ export const BentoGridItem = ({
         return (
           <div
             className={cn(
-              "group/bento  custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
+              "group/bento max-h-[300px] md:max-h-full  custom-scrollbar overflow-y-auto  row-span-1 flex flex-col justify-between space-y-4 rounded-xl border border-neutral-700 bg-[#121212] p-4 ",
               className,
             )}
           >

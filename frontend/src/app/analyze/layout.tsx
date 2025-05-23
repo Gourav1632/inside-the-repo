@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from "react";
+import React from "react";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import {
   IconGitBranch,
@@ -64,10 +64,7 @@ export default function AnalyzeLayout({
 
   return (
     <div className="relative overflow-hidden min-h-screen flex flex-col bg-background text-foreground">
-      {/* Main content (e.g., Graph) */}
       <main className="">{children}</main>
-
-
       {/* Floating Dock at bottom center */}
       <div className="absolute z-20 bottom-10 w-full flex justify-center">
         <FloatingDock

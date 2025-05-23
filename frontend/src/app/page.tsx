@@ -48,7 +48,7 @@ export default function Home() {
         <p className="font-normal text-xl  text-neutral-300 max-w-2xl text-center mx-auto">
           A smarter way to explore codebases—because reading thousands of lines shouldn't feel like decoding ancient scripts.
         </p>
-        <div className="w-100">
+        <div className="w-90 md:w-100 ">
         <PlaceholdersAndVanishInput placeholders={["Search a Git repository","Enter a repo URL"]} onChange={handleChange} onSubmit={onSubmit} />
         </div>
       </div>

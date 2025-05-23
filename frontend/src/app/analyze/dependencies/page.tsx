@@ -33,14 +33,21 @@ function DependencyPage() {
 
   return (
     <div className="h-screen w-full relative">
+      <div className='h-screen fixed w-full'>
       <GridBackground />
+      </div>
 
-      <h1 className="text-xl lg:text-3xl fixed z-20 top-10 left-10 font-bold text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
+      {/* Heading */}
+      <motion.h1
+        className="relative text-xl w-full text-left p-10 lg:text-3xl z-20 font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
-          File Graph
-        </span>
-        : {currentFile}
-      </h1>
+           File Graph:
+        </span> <span className='break-all'>{currentFile}</span>
+      </motion.h1>
 
       <div className="relative z-10 h-full w-full">
         {fileAnalysis?.file_graph?.nodes?.length > 0 ? (

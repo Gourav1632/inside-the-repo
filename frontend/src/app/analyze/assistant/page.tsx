@@ -7,6 +7,7 @@ import Loading from '@/components/Loading';
 import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
 import { askAssistantRoute } from '@/utils/APIRoutes';
 import clsx from 'clsx';
+import {motion} from "framer-motion"
 
 function Assistant() {
   const [fileAnalysis, setFileAnalysis] = useState<any>(null);
@@ -105,13 +106,19 @@ function Assistant() {
     <div className="w-full h-screen flex flex-col relative overflow-hidden">
       <GridBackground />
 
-      <h1 className="text-xl lg:text-3xl fixed z-20 top-10 left-10 font-bold text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
+      {/* Heading */}
+      <motion.h1
+        className="relative text-xl w-full text-left p-10 lg:text-3xl z-20 font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
-          Assistant
-        </span>: {currentFile}
-      </h1>
+          Assistant:
+        </span> <span className='break-all'>{currentFile}</span>
+      </motion.h1>
 
-    <div className='flex flex-col justify-center items-center h-full'>
+    <div className='flex flex-col justify-center items-center h-[80vh]'>
       {/* Chat History */}
       <div
         ref={chatRef}
@@ -145,7 +152,7 @@ function Assistant() {
       </div>
 
       {/* Input */}
-      <div className="w-full max-w-3xl  z-50">
+      <div className="p-8  w-full   lg:max-w-3xl  z-20">
         <PlaceholdersAndVanishInput
           placeholders={[`Ask something about ${currentFile}`]}
           value={input}
