@@ -11,7 +11,7 @@ import {motion} from "framer-motion"
 import { FileAnalysis } from '@/types/file_analysis_type';
 
 function Assistant() {
-  const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis>(null);
+  const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
   const [currentFile, setCurrentFile] = useState<string>('');
   const [code, setCode] = useState<string>('');
   const [loading, setLoading] = useState(true);
