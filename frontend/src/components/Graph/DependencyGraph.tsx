@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ReactFlow, Controls } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { getLayoutedGraph } from '@/components/Graph/Layout';
+import { FileAnalysis } from '@/types/file_analysis_type';
 
 
-function DependencyGraph({analysis}) {
+function DependencyGraph({analysis}:{analysis:FileAnalysis}) {
     
     if (!analysis) return <div>Loading graph...</div>;
     console.log(analysis)

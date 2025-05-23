@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { ClassInfo, FunctionInfo, GitInfo, ImportInfo, RecentCommit } from "@/types/repo_analysis_type";
 
 export const BentoGrid = ({
   className,
@@ -27,12 +28,13 @@ export const BentoGridItem = ({
   icon,
 }: {
   className?: string;
-  title?: string | React.ReactNode;
-  description?: any;
+  title?: string ;
+  description?: string | ImportInfo[] | ClassInfo[] | FunctionInfo[] | GitInfo | React.ReactNode | null;
   header?: React.ReactNode;
   icon?: React.ReactNode;
 }) => {
     if(title=="File Summary"){
+      const Description = description as string
         return (
           <div
             className={cn(
@@ -47,12 +49,16 @@ export const BentoGridItem = ({
                 {title}
               </div>
               <div className="font-sans  font-normal text-neutral-600 dark:text-neutral-300 break-words overflow-hidden">
-                {description}
+                {Description}
               </div>
             </div>
           </div>
         );
     }else if((title=="Functions" || title=="Classes")&& Array.isArray(description)){
+            const Description = (title === "Functions"
+          ? description as FunctionInfo[]
+          : description as ClassInfo[]
+        );
         return (
           <div
             className={cn(
@@ -68,12 +74,12 @@ export const BentoGridItem = ({
               </div>
               <div className="flex flex-col gap-2">
 
-              {description?.length === 0 ? (
+              {Description?.length === 0 ? (
                   <div className="font-sans  font-normal text-neutral-600 dark:text-neutral-300">
                     No major {title.toLowerCase()}.
                 </div>
                 ) : (
-                    description?.map((item, idx) => (
+                    Description?.map((item, idx) => (
                         <div
                         key={idx}
                         className="font-sans font-normal text-neutral-600 dark:text-neutral-300 break-words overflow-hidden"
@@ -118,6 +124,7 @@ export const BentoGridItem = ({
           </div>
         );
     }else if(title=="File Git History"){
+      const gitDescription = description as GitInfo;
         return (
           <div
             className={cn(
@@ -132,12 +139,12 @@ export const BentoGridItem = ({
                 {title}
               </div>
               <div  className="font-sans font-normal text-neutral-600 dark:text-neutral-300 break-words overflow-hidden">
-              <div>Commit Count : <span className="font-bold">{description.commit_count}</span></div>
-              <div>Last modified : <span className="font-bold">{description.last_modified}</span></div>
+              <div>Commit Count : <span className="font-bold">{gitDescription.commit_count}</span></div>
+              <div>Last modified : <span className="font-bold">{gitDescription.last_modified}</span></div>
               <div><span className="font-bold">Recents commits: </span></div>
               <div className="flex flex-col gap-2">
               {
-                description.recent_commits.map((item,idx)=>{
+                gitDescription.recent_commits.map((item:RecentCommit,idx)=>{
                     return(
                         <div className="bg-neutral-900 p-4 rounded-xl shadow-lg w-full h-full border border-neutral-700 text-white overflow-hidden" key={idx}>
                             <div><span className="font-semibold">Author : </span>{item.author}</div>
@@ -153,7 +160,5 @@ export const BentoGridItem = ({
             </div>
           </div>
         );
-    }else if(title== "Most "){
-
     }
 };

@@ -5,9 +5,10 @@ import Loading from '@/components/Loading';
 import FileTutorial from '@/components/Tutorial/FileTutorial';
 import { FileCodeViewer } from '@/components/FileAnalysis/FileCodeViewer';
 import { motion } from 'framer-motion';
+import { FileAnalysis, TutorialStep } from '@/types/file_analysis_type';
 
 function Tutorial() {
-  const [fileAnalysis, setFileAnalysis] = useState<any>(null);
+  const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
   const [currentFile, setCurrentFile] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Retrieving file contents...');
@@ -34,7 +35,7 @@ function Tutorial() {
     const steps = fileAnalysis?.analysis?.tutorial ?? [];
     const allLines = new Set<number>();
 
-    steps.forEach((step: any) => {
+    steps.forEach((step: TutorialStep) => {
       if (Array.isArray(step.lines)) {
         step.lines.forEach((line: number | [number, number]) => {
           if (Array.isArray(line)) {

@@ -11,17 +11,18 @@ export default function LoadingScreen() {
     "Testing your patience....",
     "Putting the pieces together....."
   ];
+  const message_length =  messages.length
 
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
-    if (messageIndex < messages.length - 1) {
+    if (messageIndex < message_length - 1) {
       const timeout = setTimeout(() => {
         setMessageIndex((prev) => prev + 1);
       },3000); 
       return () => clearTimeout(timeout);
     }
-  }, [messageIndex]);
+  }, [messageIndex,message_length]);
 
   const currentMessage = messages[messageIndex];
   const firstSpaceIndex = currentMessage.indexOf(" ");

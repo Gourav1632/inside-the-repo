@@ -10,9 +10,10 @@ import { askAssistantRoute, fileAnalysisRoute } from '@/utils/APIRoutes';
 import { useRouter } from 'next/navigation';
 import Loading from '../Loading';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Analysis } from '@/types/repo_analysis_type';
 
 function ArchitectureGraph() {
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Retrieving architecture map...");
@@ -39,13 +40,15 @@ function ArchitectureGraph() {
   const proOptions = { hideAttribution: true };
 
   const getFileAST = (file_path: string) => {
-    const astEntries = Object.entries(analysis.repo_analysis.ast);
-    for (const [key, ast] of astEntries) {
-      const pathWithoutExt = key.replace(/\.[^/.]+$/, '');
-      if (pathWithoutExt === file_path) {
-        return { file: key, file_ast: ast };
+    if(analysis){
+      const astEntries = Object.entries(analysis.repo_analysis.ast);
+      for (const [key, ast] of astEntries) {
+        const pathWithoutExt = key.replace(/\.[^/.]+$/, '');
+        if (pathWithoutExt === file_path) {
+          return { file: key, file_ast: ast };
+        }
       }
-    }
+  }
     return undefined;
   };
 
@@ -82,15 +85,17 @@ function ArchitectureGraph() {
         console.log(response.data.message);
         localStorage.removeItem('history_id');
       }
+      let response;
+      if(analysis){
+         response = await axios.post(fileAnalysisRoute, {
+          file_path: file,
+          file_ast,
+          repo_url: analysis.repo_url,
+          branch: 'main',
+        });
+    }
 
-      const response = await axios.post(fileAnalysisRoute, {
-        file_path: file,
-        file_ast,
-        repo_url: analysis.repo_url,
-        branch: 'main',
-      });
-
-      localStorage.setItem(storageKey, JSON.stringify(response.data));
+      localStorage.setItem(storageKey, JSON.stringify(response?.data));
       router.push(`/analyze/file-analysis`);
     } catch (error) {
       console.log('Error fetching file:', error);

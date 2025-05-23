@@ -8,9 +8,10 @@ import { TopContributors } from '@/components/Git/TopContributors';
 import { MostChangedFiles } from '@/components/Git/MostChangedFiles';
 import { ProjectSummary } from '@/components/Git/ProjectSummary';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GitAnalysis } from '@/types/git_analysis_type';
 
 function Commits() {
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<GitAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Retrieving git analysis...");
 

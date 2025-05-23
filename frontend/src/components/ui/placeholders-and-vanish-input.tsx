@@ -4,46 +4,64 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+type PixelData = {
+  x: number;
+  y: number;
+  r: number;
+  color: string;
+};
+
+type RawPixelData = {
+  x: number;
+  y: number;
+  color: [number, number, number, number]; // RGBA array
+};
+
+
+
 export function PlaceholdersAndVanishInput({
   placeholders,
   onChange,
   onSubmit,
 }: {
   placeholders: string[];
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startAnimation = () => {
-    intervalRef.current = setInterval(() => {
-      setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length);
-    }, 3000);
-  };
-  const handleVisibilityChange = () => {
-    if (document.visibilityState !== "visible" && intervalRef.current) {
-      clearInterval(intervalRef.current); // Clear the interval when the tab is not visible
-      intervalRef.current = null;
-    } else if (document.visibilityState === "visible") {
-      startAnimation(); // Restart the interval when the tab becomes visible
+  
+const startAnimation = useCallback(() => {
+  intervalRef.current = setInterval(() => {
+    setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length);
+  }, 3000);
+}, [placeholders.length]);
+
+const handleVisibilityChange = useCallback(() => {
+  if (document.visibilityState !== "visible" && intervalRef.current) {
+    clearInterval(intervalRef.current); // Clear the interval when the tab is not visible
+    intervalRef.current = null;
+  } else if (document.visibilityState === "visible") {
+    startAnimation(); // Restart the interval when the tab becomes visible
+  }
+}, [startAnimation]);
+
+useEffect(() => {
+  startAnimation();
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+
+  return () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
   };
+}, [startAnimation, handleVisibilityChange]);
 
-  useEffect(() => {
-    startAnimation();
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [placeholders]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const newDataRef = useRef<any[]>([]);
+  const newDataRef = useRef<PixelData[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [animating, setAnimating] = useState(false);
@@ -67,12 +85,12 @@ export function PlaceholdersAndVanishInput({
 
     const imageData = ctx.getImageData(0, 0, 800, 800);
     const pixelData = imageData.data;
-    const newData: any[] = [];
+    const newData: RawPixelData[] = [];
 
     for (let t = 0; t < 800; t++) {
-      let i = 4 * t * 800;
+      const i = 4 * t * 800;
       for (let n = 0; n < 800; n++) {
-        let e = i + 4 * n;
+        const e = i + 4 * n;
         if (
           pixelData[e] !== 0 &&
           pixelData[e + 1] !== 0 &&
@@ -171,8 +189,8 @@ export function PlaceholdersAndVanishInput({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    onSubmit?.(e); 
     vanishAndSubmit();
-    onSubmit && onSubmit(e);
   };
   return (
     <form
@@ -193,7 +211,7 @@ export function PlaceholdersAndVanishInput({
         onChange={(e) => {
           if (!animating) {
             setValue(e.target.value);
-            onChange && onChange(e);
+            onChange?.(e);
           }
         }}
         onKeyDown={handleKeyDown}

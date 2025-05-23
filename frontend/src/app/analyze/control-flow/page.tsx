@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import CallGraph from '@/components/Graph/CallGraph';
 import Loading from '@/components/Loading';
 import { motion } from 'framer-motion';
+import { FileAnalysis } from '@/types/file_analysis_type';
 
 function ControlFlow() {
-  const [fileAnalysis, setFileAnalysis] = useState<any>(null);
+  const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
   const [currentFile, setCurrentFile] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Retrieving file contents...');

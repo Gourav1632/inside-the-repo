@@ -78,7 +78,7 @@ const tabs = [
           <span className='text-white'>Welcome to</span> Into the repo!
         </h1>
         <p className="text-lg text-neutral-300 mb-6 text-center">
-          Hey! This is your starting point. Here's a quick guide to help you explore this platform effectively:
+          {`Hey! This is your starting point. Here's a quick guide to help you explore this platform effectively:`}
         </p>
 
         <div className="space-y-4">
@@ -88,8 +88,8 @@ const tabs = [
         </div>
 
         <p className="mt-6 text-sm text-neutral-400 text-center">
-          Below, you'll see a floating dock with tabs for each section. Click any tab to jump to that functionality.
-          You're all set to begin your journey. 🚀
+          {`Below, you'll see a floating dock with tabs for each section. Click any tab to jump to that functionality.
+          You're all set to begin your journey. 🚀`}
         </p>
       </motion.div>
           </div>

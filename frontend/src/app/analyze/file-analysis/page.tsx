@@ -5,9 +5,10 @@ import { FileCodeViewer } from '@/components/FileAnalysis/FileCodeViewer';
 import { Analysis } from '@/components/FileAnalysis/Analysis';
 import Loading from '@/components/Loading';
 import { motion } from 'framer-motion';
+import { FileAnalysis as file_analysis } from '@/types/file_analysis_type';
 
 function FileAnalysis() {
-  const [fileAnalysis, setFileAnalysis] = useState<any>(null);
+  const [fileAnalysis, setFileAnalysis] = useState<file_analysis | null>(null);
   const [currentFile, setCurrentFile] = useState<string>("");
   const [AST, setAST] = useState(null);
   const [loading, setLoading] = useState(true);
