@@ -1,7 +1,7 @@
 import React from 'react'
 import { GridBackground } from './GridBackground'
 
-function Loading({message}) {
+function Loading({message}:{message:string}) {
   return (
     <div>
         <GridBackground/>

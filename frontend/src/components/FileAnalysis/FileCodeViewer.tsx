@@ -54,7 +54,7 @@ export const FileCodeViewer = ({
     : highlightLines;
 
   return (
-    <div className="relative w-full rounded-lg h-full bg-[#121212] py-4    font-mono text-sm">
+    <div className="relative w-full rounded-lg h-full bg-[#121212] py-4  overflow-hidden  font-mono text-sm">
       <div className="flex flex-col gap-2">
         {tabsExist && (
           <div className="flex  overflow-x-auto">
@@ -74,7 +74,7 @@ export const FileCodeViewer = ({
           </div>
         )}
         {!tabsExist && filename && (
-          <div className="flex justify-between items-center py-2">
+          <div className="flex justify-between items-center p-2">
             <div className="text-xs text-zinc-400">{filename}</div>
             <button
               onClick={copyToClipboard}
@@ -86,6 +86,7 @@ export const FileCodeViewer = ({
         )}
       </div>
       <div className="h-full overflow-auto custom-scrollbar">
+        { activeLanguage &&
       <SyntaxHighlighter
         language={activeLanguage}
         style={atomDark}
@@ -109,7 +110,7 @@ export const FileCodeViewer = ({
         PreTag="div"
       >
         {String(activeCode)}
-      </SyntaxHighlighter>
+      </SyntaxHighlighter>}
       </div>
     </div>
   );

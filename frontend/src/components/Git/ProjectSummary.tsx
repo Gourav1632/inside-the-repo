@@ -8,7 +8,7 @@ type ProjectSummaryProps = {
   last_commit_date: string;
   owner: string;
   branch?: string;
-  description?: string;
+  description?: string | null;
 };
 
 export const ProjectSummary: React.FC<ProjectSummaryProps> = ({

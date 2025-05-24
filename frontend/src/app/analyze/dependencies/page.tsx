@@ -51,7 +51,7 @@ function DependencyPage() {
       </motion.h1>
 
       <div className="relative z-10 h-full w-full">
-        {fileAnalysis?.file_graph?.nodes?.length > 0 ? (
+        {fileAnalysis && fileAnalysis?.file_graph?.nodes?.length > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

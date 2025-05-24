@@ -16,39 +16,41 @@ function Assistant() {
   const [code, setCode] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Preparing your assistant...');
-  const [chat, setChat] = useState<{ role: 'user' | 'assistant'; content: string; isCode?: boolean; language?: string }[]>([]);
+  const [chat, setChat] = useState<{ role: string; content: string}[]>([]);
   const [input, setInput] = useState('');
   const [historyID, setHistoryID] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const chatRef = useRef<HTMLDivElement | null>(null);
 
   // Load file info
-  useEffect(() => {
-    const file = localStorage.getItem('lastUsedFile');
-    const storedHistoryID = localStorage.getItem('history_id');
+useEffect(() => {
+  const file = localStorage.getItem('lastUsedFile');
+  const storedHistoryID = localStorage.getItem('history_id');
 
-    if (storedHistoryID) {
+  if (storedHistoryID) {
     setHistoryID(storedHistoryID);
-    }
-    if (!file) {
-      setMessage('No file selected. Please select a file from architecture map.');
-      setLoading(false);
-      return;
-    }
+  }
 
-    setCurrentFile(file);
-
-    const stored = localStorage.getItem(`fileAnalysis-${file}`);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setFileAnalysis(parsed);
-      setCode(JSON.stringify(fileAnalysis.analysis.code));
-    } else {
-      setMessage('No analysis found for selected file.');
-    }
-
+  if (!file) {
+    setMessage('No file selected. Please select a file from architecture map.');
     setLoading(false);
-  },[fileAnalysis]);
+    return;
+  }
+
+  setCurrentFile(file);
+
+  const stored = localStorage.getItem(`fileAnalysis-${file}`);
+  if (stored) {
+    const parsed: FileAnalysis = JSON.parse(stored);
+    setFileAnalysis(parsed);
+    setCode(JSON.stringify(parsed.analysis.code)); 
+  } else {
+    setMessage('No analysis found for selected file.');
+  }
+
+  setLoading(false);
+}, [fileAnalysis]); 
+
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -82,9 +84,7 @@ function Assistant() {
 
       const assistantMessage = {
         role: 'assistant',
-        content: data.answer,
-        isCode: data.isCode || false,
-        language: data.language || '',
+        content: data.answer
       };
 
       setChat(prev => [...prev, assistantMessage]);
@@ -136,13 +136,7 @@ function Assistant() {
                 : 'bg-neutral-200 text-black self-start'
             )}
           >
-            {msg.isCode ? (
-              <pre className="text-sm p-2 bg-black text-green-400 rounded-lg overflow-x-auto">
-                <code className={`language-${msg.language}`}>{msg.content}</code>
-              </pre>
-            ) : (
-              msg.content
-            )}
+              {msg.content}
           </div>
         ))}
 
@@ -157,7 +151,6 @@ function Assistant() {
       <div className="p-8  w-full   lg:max-w-3xl  z-20">
         <PlaceholdersAndVanishInput
           placeholders={[`Ask something about ${currentFile}`]}
-          value={input}
           onChange={e => setInput(e.target.value)}
           onSubmit={handleSubmit}
         />

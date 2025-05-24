@@ -7,9 +7,11 @@ import {
   IconFileTextAi,        // For File Summary
   IconGitCommit,         // For Git History
 } from "@tabler/icons-react";
+import { FileAnalysis } from "@/types/file_analysis_type";
+import { ASTFileData } from "@/types/repo_analysis_type";
 
 
-export function Analysis({fileAnalysis,AST}) {
+export function Analysis({fileAnalysis,AST}:{fileAnalysis:FileAnalysis["analysis"], AST:ASTFileData}) {
 const items = [
   {
     title: "Imports",

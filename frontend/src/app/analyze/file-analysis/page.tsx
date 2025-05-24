@@ -6,11 +6,12 @@ import { Analysis } from '@/components/FileAnalysis/Analysis';
 import Loading from '@/components/Loading';
 import { motion } from 'framer-motion';
 import { FileAnalysis as file_analysis } from '@/types/file_analysis_type';
+import { ASTFileData } from '@/types/repo_analysis_type';
 
 function FileAnalysis() {
   const [fileAnalysis, setFileAnalysis] = useState<file_analysis | null>(null);
   const [currentFile, setCurrentFile] = useState<string>("");
-  const [AST, setAST] = useState(null);
+  const [AST, setAST] = useState<ASTFileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Retrieving file contents...");
   const [showCodeViewer, setShowCodeViewer] = useState(false);
@@ -90,15 +91,20 @@ function FileAnalysis() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
+          {(fileAnalysis && AST) &&
           <Analysis fileAnalysis={fileAnalysis?.analysis} AST={AST} />
+          }
         </motion.div>
 
         {/* File Code Viewer - Desktop View */}
         <div className="hidden lg:flex max-w-xl h-full justify-center items-center w-full">
+        {fileAnalysis && (
           <FileCodeViewer
+            filename={currentFile}
             language={fileAnalysis?.analysis.language}
             code={fileAnalysis?.analysis.code}
-          />
+          />)
+        }
         </div>
       </motion.div>
 
@@ -117,10 +123,15 @@ function FileAnalysis() {
             Close
           </button>
         </div>
+        {
+          fileAnalysis && (
         <FileCodeViewer
+          filename={currentFile}
           language={fileAnalysis?.analysis.language}
           code={fileAnalysis?.analysis.code}
         />
+          )
+        }
       </motion.div>
     </div>
   );

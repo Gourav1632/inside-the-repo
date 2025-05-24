@@ -90,20 +90,20 @@ function Commits() {
                 </motion.div>
               )}
 
-              {analysis?.top_contributors?.length > 0 && (
+              {analysis && analysis?.top_contributors?.length > 0 && (
                 <motion.div className="z-20 h-full flex-1 w-full" variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}>
                   <TopContributors contributors={analysis.top_contributors} />
                 </motion.div>
               )}
 
-              {analysis?.most_changed_files?.length > 0 && (
+              {analysis && analysis?.most_changed_files?.length > 0 && (
                 <motion.div className="z-20 h-full flex-2 w-full" variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}>
                   <MostChangedFiles files={analysis.most_changed_files} />
                 </motion.div>
               )}
             </motion.div>
 
-            {analysis?.recent_commits?.length > 0 && (
+            {analysis && analysis?.recent_commits?.length > 0 && (
               <motion.div
                 className="z-20 h-[24rem] w-full"
                 initial={{ opacity: 0, y: 30 }}

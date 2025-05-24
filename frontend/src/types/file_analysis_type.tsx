@@ -32,9 +32,10 @@ export type Graph = {
 export type FileAnalysis = {
   analysis: {
     code: string;
+    error?:string;
     language: string;
-    summary: string;
-    tutorial: TutorialStep[];
+    summary?: string;
+    tutorial?: TutorialStep[];
   };
   call_graph: Graph;
   file_graph: Graph;

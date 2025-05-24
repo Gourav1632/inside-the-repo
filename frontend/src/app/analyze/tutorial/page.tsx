@@ -111,13 +111,16 @@ function Tutorial() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-          className="max-w-xl h-full flex justify-center items-center w-full hidden lg:flex"
+          className="max-w-xl h-full  justify-center items-center w-full hidden lg:flex"
         >
-          <FileCodeViewer
+          {fileAnalysis && (
+            <FileCodeViewer
+            filename={currentFile}
             language={fileAnalysis?.analysis.language}
             code={fileAnalysis?.analysis.code}
             highlightLines={highlightLines}
-          />
+            />)
+          }
         </motion.div>
       </motion.div>
 
@@ -136,11 +139,14 @@ function Tutorial() {
             Close
           </button>
         </div>
-        <FileCodeViewer
-          language={fileAnalysis?.analysis.language}
-          code={fileAnalysis?.analysis.code}
-          highlightLines={highlightLines}
-        />
+        {fileAnalysis && (
+            <FileCodeViewer
+            filename={currentFile}
+            language={fileAnalysis?.analysis.language}
+            code={fileAnalysis?.analysis.code}
+            highlightLines={highlightLines}
+            />)
+          }
       </motion.div>
     </div>
   );
