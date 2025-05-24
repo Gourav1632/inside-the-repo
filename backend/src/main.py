@@ -11,7 +11,7 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://into-the-repo.vercel.app/"
+    "https://into-the-repo.vercel.app"
 ]
 
 if FRONTEND_HOST:
