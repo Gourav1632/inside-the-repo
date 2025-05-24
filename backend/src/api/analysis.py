@@ -29,15 +29,18 @@ class FileGraphRequest(BaseModel):
 
 @router.post("/api/analyze")
 async def get_ast(req: RepoRequest):
-    """
-    Parse the given repo and provide the AST and Git metadata.
-    """
-    ast = parse_code(req.repo_url, req.branch)
-    git_metadata = get_repo_git_analysis(req.repo_url, req.branch)
-    return {
-        "repo_analysis": ast,
-        "git_analysis": git_metadata
-    }
+    try:
+        ast = parse_code(req.repo_url, req.branch)
+        git_metadata = get_repo_git_analysis(req.repo_url, req.branch)
+        return {
+            "repo_analysis": ast,
+            "git_analysis": git_metadata
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
 
 @router.post("/api/file")
 def generate_file_graph(req: FileGraphRequest):

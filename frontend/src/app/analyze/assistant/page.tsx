@@ -11,7 +11,6 @@ import {motion} from "framer-motion"
 import { FileAnalysis } from '@/types/file_analysis_type';
 
 function Assistant() {
-  const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
   const [currentFile, setCurrentFile] = useState<string>('');
   const [code, setCode] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -42,14 +41,13 @@ useEffect(() => {
   const stored = localStorage.getItem(`fileAnalysis-${file}`);
   if (stored) {
     const parsed: FileAnalysis = JSON.parse(stored);
-    setFileAnalysis(parsed);
     setCode(JSON.stringify(parsed.analysis.code)); 
   } else {
     setMessage('No analysis found for selected file.');
   }
 
   setLoading(false);
-}, [fileAnalysis]); 
+}, []); 
 
 
   // Scroll to bottom on new message
@@ -84,7 +82,7 @@ useEffect(() => {
 
       const assistantMessage = {
         role: 'assistant',
-        content: data.answer
+        content: data.answer || 'Sorry something went wrong. Please try again later.'
       };
 
       setChat(prev => [...prev, assistantMessage]);

@@ -12,7 +12,7 @@ function Architecture() {
           <span className=" bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">Architecture Map</span>
           : Select a file to proceed.
         </h1>
-      <div className="relative z-10 h-full w-full">
+      <div className=" z-10 h-full w-full">
         <ArchitectureGraph />
       </div>
     </div>

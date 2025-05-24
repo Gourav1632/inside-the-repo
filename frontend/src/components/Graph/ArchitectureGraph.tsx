@@ -105,7 +105,7 @@ function ArchitectureGraph() {
   };
 
   return (
-    <div style={{ height: '100%', width: '100%' }}>
+    <div  className='h-full w-full'>
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div
@@ -114,6 +114,8 @@ function ArchitectureGraph() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className='-mt-24'
+
           >
             <Loading message={message} />
           </motion.div>
