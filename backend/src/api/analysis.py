@@ -15,10 +15,9 @@ class AskRequest(BaseModel):
     history_id: Optional[str] = None
     reset: Optional[bool] = False
 
-# Define a request model for analyzing repo
 class RepoRequest(BaseModel):
     repo_url: str
-    branch: str = 'main'  # Default to the main branch
+    branch: str = 'main' 
 
 
 class FileGraphRequest(BaseModel):

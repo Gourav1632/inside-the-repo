@@ -64,7 +64,7 @@ def calculate_complexity(node):
     return complexity
 
 def is_third_party_module(module_name):
-    return not module_name.startswith(".")  # simple check for relative imports
+    return not module_name.startswith(".")  # check for relative imports
 
 def extract_import_data(node, code):
     import_info = {
@@ -141,7 +141,6 @@ def get_node_name(node):
         return node.text.decode()
 
     if node.type == "member_expression":
-        # example: obj.method or obj.prop.method
         object_node = node.child_by_field_name("object")
         property_node = node.child_by_field_name("property")
         object_name = get_node_name(object_node) if object_node else ""
@@ -151,12 +150,8 @@ def get_node_name(node):
         return object_name or property_name
 
     if node.type == "call_expression":
-        # nested call like foo()()
         return extract_callee_name(node)
 
-    # add more cases as needed...
-
-    # fallback: raw source text if no better representation
     return node.text.decode()
 
 def parse_code(repo_url: str, branch: str):

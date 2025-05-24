@@ -64,13 +64,13 @@ def analyze_code_with_claude(repo_url: str, branch: str, relative_path: str) -> 
 
     try:
         completion = client.chat.completions.create(
-            model="openai/gpt-4o",  # or use "mistralai/mixtral-8x7b-instruct"
+            model="openai/gpt-4o", 
             messages=messages,
             temperature=0.3,
             max_tokens=1024,
             extra_headers={
-                "HTTP-Referer": "http://localhost",  # optional
-                "X-Title": "InsideTheRepo",          # optional
+                "HTTP-Referer": "http://localhost",  
+                "X-Title": "InsideTheRepo",     
             }
         )
 
@@ -79,7 +79,7 @@ def analyze_code_with_claude(repo_url: str, branch: str, relative_path: str) -> 
         cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", response_text.strip(), flags=re.IGNORECASE)
         try:
             parsed = json.loads(cleaned)
-            parsed["code"] = code  # 🔥 Add code here
+            parsed["code"] = code 
             parsed["language"] = language
             return parsed
         except json.JSONDecodeError:

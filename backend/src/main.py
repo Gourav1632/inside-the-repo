@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.api import analysis
+import os
+
+FRONTEND_HOST = os.getenv("FRONTEND_HOST")
 
 app = FastAPI()
 
@@ -8,16 +11,18 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # Add other frontend URLs if any
 ]
+
+if FRONTEND_HOST:
+    origins.append(FRONTEND_HOST)
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,        # Or ["*"] to allow all origins (not recommended in prod)
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],          # Allow all HTTP methods (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],          # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(analysis.router)
