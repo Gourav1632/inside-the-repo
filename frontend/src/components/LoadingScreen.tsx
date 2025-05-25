@@ -20,7 +20,7 @@ export default function LoadingScreen() {
     if (messageIndex < message_length - 1) {
       const timeout = setTimeout(() => {
         setMessageIndex((prev) => prev + 1);
-      },3000); 
+      },5000); 
       return () => clearTimeout(timeout);
     }
   }, [messageIndex,message_length]);

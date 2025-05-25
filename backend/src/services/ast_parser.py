@@ -215,7 +215,6 @@ def parse_code(repo_url: str, branch: str):
                             }
                         })
 
-                    # Handle other node types similarly...
                     for child in node.children:
                         traverse(child)
 
