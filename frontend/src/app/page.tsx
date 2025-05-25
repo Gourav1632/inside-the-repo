@@ -23,6 +23,7 @@ export default function Home() {
         branch:"main"
       });
       const analysisData = {"repo_url":repoUrl, branch:"main",...response.data};
+      localStorage.clear()
       localStorage.setItem("repoAnalysis", JSON.stringify(analysisData));
       router.push("/analyze")
     }catch(error){

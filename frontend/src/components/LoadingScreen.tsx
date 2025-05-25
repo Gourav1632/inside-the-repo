@@ -8,8 +8,9 @@ export default function LoadingScreen() {
     "Collecting source code.",
     "Analyzing code structure..",
     "Building the architecture map...",
-    "Testing your patience....",
-    "Putting the pieces together....."
+    "Analysing Git history....",
+    "Testing your patience.....",
+    "Putting the pieces together......"
   ];
   const message_length =  messages.length
 

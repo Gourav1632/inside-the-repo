@@ -1,14 +1,18 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from src.services.ast_parser import parse_code
 from typing import Dict, Any, Optional
-from src.services.per_file_graph_builder import build_per_file_graph,build_call_graph
+from fastapi.concurrency import run_in_threadpool
+import asyncio
+
+from src.services.ast_parser import parse_code
+from src.services.per_file_graph_builder import build_per_file_graph, build_call_graph
 from src.services.summarizer import analyze_code_with_claude
 from src.services.git_utils import get_repo_git_analysis
 from src.services.ask_ai import askAI, conversation_memory
 
 router = APIRouter()
 
+# === Request Schemas ===
 class AskRequest(BaseModel):
     question: str
     code: str
@@ -19,23 +23,28 @@ class RepoRequest(BaseModel):
     repo_url: str
     branch: str = 'main' 
 
-
 class FileGraphRequest(BaseModel):
     file_path: str
-    file_ast: Dict[str,Any]
+    file_ast: Dict[str, Any]
     repo_url: str
     branch: str
 
 
+# === Routes ===
+
 @router.post("/api/analyze")
 async def get_ast(req: RepoRequest):
     try:
-        ast = parse_code(req.repo_url, req.branch)
-        git_metadata = get_repo_git_analysis(req.repo_url, req.branch)
+        ast_task = asyncio.create_task(run_in_threadpool(parse_code, req.repo_url, req.branch))
+        git_metadata_task = asyncio.create_task(run_in_threadpool(get_repo_git_analysis, req.repo_url, req.branch))
+
+        ast, git_metadata = await asyncio.gather(ast_task, git_metadata_task)
+
         return {
             "repo_analysis": ast,
             "git_analysis": git_metadata
         }
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -43,36 +52,32 @@ async def get_ast(req: RepoRequest):
 
 
 @router.post("/api/file")
-def generate_file_graph(req: FileGraphRequest):
+async def generate_file_graph(req: FileGraphRequest):
     print("Request for file graph...")
-    repo_url = req.repo_url
-    branch = req.branch
-    file_path = req.file_path
-    file_ast = req.file_ast
 
-    # Always generate these
-    graph_data = build_per_file_graph(file_path, file_ast)
-    call_graph = build_call_graph(file_ast)
+    file_graph_task = asyncio.create_task(run_in_threadpool(build_per_file_graph, req.file_path, req.file_ast))
+    call_graph_task = asyncio.create_task(run_in_threadpool(build_call_graph, req.file_ast))
+    analysis_task = asyncio.create_task(run_in_threadpool(analyze_code_with_claude, req.repo_url, req.branch, req.file_path))
 
-
-    analysis = analyze_code_with_claude(repo_url, branch, file_path)
-
+    file_graph, call_graph, analysis = await asyncio.gather(file_graph_task, call_graph_task, analysis_task)
 
     return {
-        "file_path": file_path,
-        "file_graph": graph_data,
+        "file_path": req.file_path,
+        "file_graph": file_graph,
         "call_graph": call_graph,
         "analysis": analysis
     }
 
+
 @router.post("/api/ask")
-def ask_route(req: AskRequest):
-    print("Requesting ai help...")
+async def ask_route(req: AskRequest):
+    print("Requesting AI help...")
     history_id = req.history_id or f"{req.question[:20]}-{hash(req.code)}"
 
     if req.reset and history_id in conversation_memory:
-        print("History deleted for history_id : ",history_id)
+        print("History deleted for history_id:", history_id)
         del conversation_memory[history_id]
-        return {"message":"Conversation history deleted."}
-    response = askAI(req.question, req.code, history_id)
+        return {"message": "Conversation history deleted."}
+
+    response = await run_in_threadpool(askAI, req.question, req.code, history_id)
     return response

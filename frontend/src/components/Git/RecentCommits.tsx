@@ -28,7 +28,7 @@ export const RecentCommits: React.FC<RecentCommitsProps> = ({ recent_commits }) 
       <ul className="custom-scrollbar space-y-2 px-6 overflow-auto h-full pb-10">
         {recent_commits.map((commit, idx) => (
           <li key={idx} className="bg-neutral-800 p-4 rounded-md border border-neutral-700">
-            <p className="font-medium text-neutral-200">{commit.message}</p>
+            <p className="font-medium text-neutral-200 break-all">{commit.message}</p>
             <div className="text-sm text-neutral-400 mt-1">
               <span>By <span className="text-neutral-300">{commit.author}</span></span> •{' '}
               <span>{new Date(commit.date).toLocaleString()}</span>

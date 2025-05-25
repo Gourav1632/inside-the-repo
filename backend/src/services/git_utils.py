@@ -108,102 +108,82 @@ def get_file_git_info(owner: str, repo: str, branch: str, filepath: str) -> Dict
         "recent_commits": recent_commits
     }
 
-
 def get_repo_git_analysis(repo: str, branch: str = "main") -> Dict[str, Any]:
-    owner, repo = extract_owner_repo(repo)
-    headers = {
-        "Accept": "application/vnd.github+json"
-    }
+    print("Getting git analysis...")
+    owner, repo_name = extract_owner_repo(repo)
+    headers = {"Accept": "application/vnd.github+json"}
     if GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
 
-    base_url = f"https://api.github.com/repos/{owner}/{repo}"
+    base_url = f"https://api.github.com/repos/{owner}/{repo_name}"
 
-    try:
-        # Repo metadata
-        repo_resp = requests.get(base_url, headers=headers)
-        repo_resp.raise_for_status()
-        repo_data = repo_resp.json()
+    # 1. Get total commits count (from commits API with per_page=1)
+    commits_resp = requests.get(f"{base_url}/commits", headers=headers, params={"sha": branch, "per_page": 1})
+    commits_resp.raise_for_status()
+    link_header = commits_resp.headers.get("Link", "")
+    total_commits = None
+    if link_header:
+        import re
+        match = re.search(r'&page=(\d+)>; rel="last"', link_header)
+        if match:
+            total_commits = int(match.group(1))
+    if total_commits is None:
+        total_commits = 1
+    print("Total commits fetched: ",total_commits)
 
-        # Contributors
-        contrib_resp = requests.get(f"{base_url}/contributors", headers=headers, params={"per_page": 100})
-        contrib_resp.raise_for_status()
-        contributors = contrib_resp.json()
+    # 2. Fetch recent 50 commits only for analysis
+    commits_resp = requests.get(f"{base_url}/commits", headers=headers, params={"sha": branch, "per_page": 50})
+    commits_resp.raise_for_status()
+    recent_commits = commits_resp.json()
 
-        # Commits (first + last)
-        commits_resp = requests.get(f"{base_url}/commits", headers=headers, params={"sha": branch, "per_page": 100})
-        commits_resp.raise_for_status()
-        commit_data = commits_resp.json()
+    # Prepare stats from recent commits
+    commit_activity = defaultdict(int)
+    file_activity = defaultdict(int)
+    author_stats = defaultdict(int)
+    recent_commit_summaries = []
 
-        total_commits = len(commit_data)
-        all_commits = commit_data[:]
+    for i, commit in enumerate(recent_commits):
+        date_str = commit["commit"]["author"]["date"]
+        date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").date()
+        commit_activity[str(date)] += 1
 
-        # Paginate to get more commits (optional: GitHub allows up to 1000 with pagination)
-        page = 2
-        while len(commit_data) == 100 and page <= 10:
-            more = requests.get(f"{base_url}/commits", headers=headers, params={"sha": branch, "per_page": 100, "page": page})
-            if more.status_code != 200:
-                break
-            more_data = more.json()
-            all_commits.extend(more_data)
-            commit_data = more_data
-            page += 1
+        author = commit["commit"]["author"]["name"]
+        author_stats[author] += 1
 
-        # Build commit statistics
-        commit_activity = defaultdict(int)
-        file_activity = defaultdict(int)
-        author_stats = defaultdict(int)
-        recent_commits = []
+        sha = commit["sha"]
+        # Fetch files changed for this commit
+        detail_resp = requests.get(f"{base_url}/commits/{sha}", headers=headers)
+        if detail_resp.status_code == 200:
+            files = detail_resp.json().get("files", [])
+            for f in files:
+                file_activity[f["filename"]] += 1
 
-        for commit in all_commits:
-            if "commit" not in commit:
-                continue
-            date_str = commit["commit"]["author"]["date"]
-            date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").date()
-            commit_activity[str(date)] += 1
+        # Keep only first 10 recent commits details (for preview)
+        if len(recent_commit_summaries) < 10:
+            recent_commit_summaries.append({
+                "sha": sha,
+                "message": commit["commit"]["message"],
+                "author": author,
+                "date": date_str
+            })
 
-            author = commit["commit"]["author"]["name"]
-            author_stats[author] += 1
-
-            sha = commit["sha"]
-            # For top file activity: fetch files per commit (optional, costly)
-            detail_url = f"{base_url}/commits/{sha}"
-            detail = requests.get(detail_url, headers=headers)
-            if detail.status_code == 200:
-                files = detail.json().get("files", [])
-                for f in files:
-                    file_activity[f["filename"]] += 1
-
-            if len(recent_commits) < 10:
-                recent_commits.append({
-                    "sha": sha,
-                    "message": commit["commit"]["message"],
-                    "author": author,
-                    "date": date_str
-                })
-
-        return {
-            "repo": repo,
-            "owner": owner,
-            "default_branch": repo_data.get("default_branch", "main"),
-            "description": repo_data.get("description"),
-            "total_commits_fetched": len(all_commits),
-            "top_contributors": sorted(
-                [{"name": name, "commits": count} for name, count in author_stats.items()],
-                key=lambda x: x["commits"],
-                reverse=True
-            )[:5],
-            "most_changed_files": sorted(
-                [{"file": name, "changes": count} for name, count in file_activity.items()],
-                key=lambda x: x["changes"],
-                reverse=True
-            )[:10],
-            "commit_activity_by_day": commit_activity,
-            "recent_commits": recent_commits,
-            "first_commit_date": all_commits[-1]["commit"]["author"]["date"] if all_commits else None,
-            "last_commit_date": all_commits[0]["commit"]["author"]["date"] if all_commits else None
-        }
-
-    except requests.HTTPError as e:
-        print(f"GitHub API error: {e}")
-        return {"error": str(e)}
+    return {
+        "repo": repo_name,
+        "owner": owner,
+        "default_branch": branch,
+        "total_commits_fetched": total_commits,  # total commits in repo
+        "most_changed_files": sorted(
+            [{"file": fname, "changes": cnt} for fname, cnt in file_activity.items()],
+            key=lambda x: x["changes"],
+            reverse=True
+        )[:10],
+        "top_contributors": sorted(
+            [{"name": name, "commits": count} for name, count in author_stats.items()],
+            key=lambda x: x["commits"],
+            reverse=True
+        )[:5],
+        "commit_activity_by_day": commit_activity,
+        "recent_commits": recent_commit_summaries,
+        "first_commit_date": recent_commits[-1]["commit"]["author"]["date"] if recent_commits else None,
+        "last_commit_date": recent_commits[0]["commit"]["author"]["date"] if recent_commits else None,
+    }

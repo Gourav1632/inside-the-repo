@@ -81,6 +81,7 @@ function Commits() {
                 <motion.div className="z-20 flex-2 w-full h-full" variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}>
                   <ProjectSummary
                     repo={analysis.repo}
+                    total_commits={analysis.total_commits_fetched}
                     first_commit_date={analysis.first_commit_date}
                     last_commit_date={analysis.last_commit_date}
                     owner={analysis.owner}

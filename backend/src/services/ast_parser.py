@@ -12,6 +12,7 @@ import tree_sitter_typescript as tstypescript
 from src.config.language_node_maps import language_node_maps
 from src.services.file_graph_generator import build_dependency_graph
 from src.services.git_utils import extract_owner_repo,get_repo_tree,download_file,get_file_git_info
+from src.services.parse_utils import extract_import_data
 
 
 LANGUAGE_GRAMMARS = {
@@ -62,47 +63,6 @@ def calculate_complexity(node):
             complexity += 1
         stack.extend(current.children)
     return complexity
-
-def is_third_party_module(module_name):
-    return not module_name.startswith(".")  # check for relative imports
-
-def extract_import_data(node, code):
-    import_info = {
-        "content": code[node.start_byte:node.end_byte],
-        "start_line": node.start_point[0] + 1,
-        "source_module": None,
-        "imported_items": [],
-        "metadata": {
-            "type": None,
-            "is_third_party": False
-        }
-    }
-
-    for child in node.children:
-        if child.type == 'string':
-            import_info["source_module"] = child.text.decode().strip('"').strip("'")
-            import_info["metadata"]["is_third_party"] = is_third_party_module(import_info["source_module"])
-
-        elif child.type == 'import_clause':
-            for sub in child.children:
-                if sub.type == 'identifier':
-                    import_info["imported_items"].append(sub.text.decode())
-                    import_info["metadata"]["type"] = 'default'
-                elif sub.type == 'named_imports':
-                    import_info["metadata"]["type"] = 'named'
-                    for ni in sub.named_children:
-                        if ni.type == 'import_specifier':
-                            name_node = ni.child_by_field_name('name')
-                            if name_node:
-                                import_info["imported_items"].append(name_node.text.decode())
-                elif sub.type == 'namespace_import':
-                    import_info["metadata"]["type"] = 'namespace'
-                    as_node = sub.child_by_field_name('name')
-                    if as_node:
-                        import_info["imported_items"].append('* as ' + as_node.text.decode())
-
-    return import_info
-
 
 def detect_file_language(filename: str):
     for language, extensions in LANGUAGE_FILE_EXTENSIONS.items():
@@ -209,7 +169,7 @@ def parse_code(repo_url: str, branch: str):
 
                     # Handle import extraction
                     if node_type in node_map.get('imports',[]):
-                        import_info = extract_import_data(node, code)
+                        import_info = extract_import_data(node, code, language,path)
                         extracted_info["imports"].append(import_info)
 
                     # Handle class extraction

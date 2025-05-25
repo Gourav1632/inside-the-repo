@@ -32,11 +32,12 @@ def build_dependency_graph(ast_dict):
                 if not source_module:
                     continue
 
-                import_path = os.path.normpath(os.path.join(base_dir, source_module))
+                import_path = os.path.normpath(source_module)
+                print(import_path)
                 source_file = os.path.splitext(import_path)[0]
 
                 if source_file in ast_files_no_ext:
-                    # Add edge
+                    # Add edge  
                     edge_id = f"{source_file}->{file}"
                     edges.append({
                         "id": edge_id,
