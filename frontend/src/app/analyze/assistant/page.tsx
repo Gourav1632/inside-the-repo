@@ -9,9 +9,10 @@ import { askAssistantRoute } from '@/utils/APIRoutes';
 import clsx from 'clsx';
 import {motion} from "framer-motion"
 import { FileAnalysis } from '@/types/file_analysis_type';
+import FileSelector from '@/components/FileAnalysis/FileSelector';
 
 function Assistant() {
-  const [currentFile, setCurrentFile] = useState<string>('');
+  const [currentFile, setCurrentFile] = useState<string>('Choose a file to ask the assistant.');
   const [code, setCode] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Preparing your assistant...');
@@ -21,7 +22,6 @@ function Assistant() {
   const [isThinking, setIsThinking] = useState(false);
   const chatRef = useRef<HTMLDivElement | null>(null);
 
-  // Load file info
 useEffect(() => {
   const file = localStorage.getItem('lastUsedFile');
   const storedHistoryID = localStorage.getItem('history_id');
@@ -104,25 +104,29 @@ useEffect(() => {
 
   return (
     <div className="w-full h-screen flex flex-col relative overflow-hidden">
-      <GridBackground />
+      <div className="fixed h-screen w-full">
+        <GridBackground />
+      </div>
 
-      {/* Heading */}
-      <motion.h1
-        className="relative text-xl w-full text-left p-10 lg:text-3xl z-20 font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
-          Assistant:
-        </span> <span className='break-all'>{currentFile}</span>
-      </motion.h1>
+      <motion.div
+      initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+       className='w-full p-10 flex items-center'>
+        {/* Heading */}
+        <h1 className="relative text-xl pr-4  text-left lg:text-3xl z-20 font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
+          <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
+            Assistant:
+          </span> 
+        </h1>
+        <FileSelector  selectedFile={currentFile} onFileSelect={()=>{window.location.reload()}}/>
+      </motion.div>
 
     <div className='flex flex-col justify-center items-center h-[80vh]'>
       {/* Chat History */}
       <div
         ref={chatRef}
-        className="h-[70vh] rounded-xl  z-10 px-4 overflow-y-auto w-full max-w-3xl  mb-4 space-y-4 custom-scrollbar"
+        className="h-[60vh] rounded-xl  z-10 px-4 overflow-y-auto w-full max-w-3xl  mb-4 space-y-4 custom-scrollbar"
       >
         {chat.map((msg, index) => (
           <div
@@ -146,7 +150,7 @@ useEffect(() => {
       </div>
 
       {/* Input */}
-      <div className="p-8  w-full   lg:max-w-3xl  z-20">
+      <div className="p-8 pt-0 w-full   lg:max-w-3xl  z-20">
         <PlaceholdersAndVanishInput
           placeholders={[`Ask something about ${currentFile}`]}
           onChange={e => setInput(e.target.value)}

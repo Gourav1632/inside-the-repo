@@ -5,18 +5,29 @@ import { ReactFlow, Controls } from '@xyflow/react';
 import type { Node as FlowNode } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { getLayoutedGraph } from '@/components/Graph/Layout';
-import axios from 'axios';
-import { askAssistantRoute, fileAnalysisRoute } from '@/utils/APIRoutes';
-import { useRouter } from 'next/navigation';
 import Loading from '../Loading';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Analysis } from '@/types/repo_analysis_type';
+import { Analysis, ASTFileData, ASTResult } from '@/types/repo_analysis_type';
 
 function ArchitectureGraph() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Retrieving architecture map...");
+  const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [fileInfo, setFileInfo] = useState<ASTFileData | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setSelectedNode(null);
+      setTooltipPos(null);
+      setFileInfo(null);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => {
+      window.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -25,7 +36,8 @@ function ArchitectureGraph() {
       setMessage("Architecture map not found. Please search for a repository.");
       return;
     }
-    setAnalysis(JSON.parse(storedData));
+    const parsed: Analysis = JSON.parse(storedData);
+    setAnalysis(parsed);
     setLoading(false);
   }, []);
 
@@ -39,73 +51,28 @@ function ArchitectureGraph() {
 
   const proOptions = { hideAttribution: true };
 
-  const getFileAST = (file_path: string) => {
-    if(analysis){
-      const astEntries = Object.entries(analysis.repo_analysis.ast);
-      for (const [key, ast] of astEntries) {
-        const pathWithoutExt = key.replace(/\.[^/.]+$/, '');
-        if (pathWithoutExt === file_path) {
-          return { file: key, file_ast: ast };
-        }
-      }
-  }
-    return undefined;
+  const findMatchingFile = (nodeId: string, ast: ASTResult): ASTFileData | null => {
+    const matchEntry = Object.entries(ast).find(([filePath]) => {
+      const nameWithoutExt = filePath.replace(/\.[^/.]+$/, '');
+      return nameWithoutExt === nodeId;
+    });
+    return matchEntry ? matchEntry[1] : null;
   };
 
-  const handleNodeClick = async (_: React.MouseEvent, node: FlowNode) => {
-    setMessage("Requesting file data...");
-    setLoading(true);
-    try {
-      const file_path = node.id;
-      console.log("node clicked ", node.id);
-      const result = getFileAST(file_path);
+  const handleNodeClick = async (event: React.MouseEvent, node: FlowNode) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedNode(node);
+    setTooltipPos({ x: event.clientX, y: event.clientY  + 10 });
 
-      if (!result) {
-        console.warn(`AST not found for file: ${file_path}`);
-        return;
-      }
-
-      const { file, file_ast } = result;
-      localStorage.setItem("lastUsedFile", file);
-      const storageKey = `fileAnalysis-${file}`;
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
-        router.push(`/analyze/file-analysis`);
-        return;
-      }
-
-      const history_id = localStorage.getItem('history_id');
-      if (history_id) {
-        const response = await axios.post(askAssistantRoute, {
-          reset: true,
-          history_id,
-          question: "",
-          code: ""
-        });
-        console.log(response.data.message);
-        localStorage.removeItem('history_id');
-      }
-      let response;
-      if(analysis){
-         response = await axios.post(fileAnalysisRoute, {
-          file_path: file,
-          file_ast,
-          repo_url: analysis.repo_url,
-          branch: 'main',
-        });
-    }
-
-      localStorage.setItem(storageKey, JSON.stringify(response?.data));
-      router.push(`/analyze/file-analysis`);
-    } catch (error) {
-      console.log('Error fetching file:', error);
-    } finally {
-      setLoading(false);
+    if (analysis) {
+      const match = findMatchingFile(node.id, analysis.repo_analysis.ast);
+      setFileInfo(match);
     }
   };
 
   return (
-    <div  className='h-full w-full'>
+    <div className='h-full w-full'>
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div
@@ -115,7 +82,6 @@ function ArchitectureGraph() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className='-mt-24'
-
           >
             <Loading message={message} />
           </motion.div>
@@ -138,6 +104,36 @@ function ArchitectureGraph() {
             >
               <Controls />
             </ReactFlow>
+
+            {selectedNode && tooltipPos && (
+              <motion.div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute z-50 bg-white shadow-xl rounded-md p-3 border border-gray-200 text-sm text-gray-800 -translate-x-1/2"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{
+                  top: tooltipPos.y,
+                  left: tooltipPos.x,
+                  minWidth: 220,
+                }}
+              >
+                <p className="font-semibold">{selectedNode.id}</p>
+                <p className="text-xs text-gray-500 mb-1">
+                  {String(selectedNode.data?.label || 'No label')}
+                </p>
+
+                {fileInfo && (
+                  <>
+                    <p><strong>Language:</strong> {fileInfo.language}</p>
+                    <p><strong>Last modified:</strong> {fileInfo.git_info?.last_modified || 'N/A'}</p>
+                    <p><strong>Functions:</strong> {fileInfo.functions?.length || 0}</p>
+                    <p><strong>Classes:</strong> {fileInfo.classes?.length || 0}</p>
+                    <p><strong>Imports:</strong> {fileInfo.imports?.length || 0}</p>
+                  </>
+                )}
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

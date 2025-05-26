@@ -6,10 +6,11 @@ import FileTutorial from '@/components/Tutorial/FileTutorial';
 import { FileCodeViewer } from '@/components/FileAnalysis/FileCodeViewer';
 import { motion } from 'framer-motion';
 import { FileAnalysis, TutorialStep } from '@/types/file_analysis_type';
+import FileSelector from '@/components/FileAnalysis/FileSelector';
 
 function Tutorial() {
   const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
-  const [currentFile, setCurrentFile] = useState<string>('');
+  const [currentFile, setCurrentFile] = useState<string>('Choose a file to view its tutorial.');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Retrieving file contents...');
   const [showCodeViewer, setShowCodeViewer] = useState(false);
@@ -59,20 +60,27 @@ function Tutorial() {
 
   return (
     <div className="h-screen flex flex-col items-center w-full relative overflow-y-auto scroll-smooth">
-      <GridBackground />
+      <div className="fixed h-screen w-full">
+          <GridBackground />
+        </div>
 
-      {/* Heading */}
-      <motion.h1
-        className="relative text-xl w-full text-left p-10 lg:text-3xl z-20 font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
-          Tutorial:
-        </span> <span className='break-all'>{currentFile}</span>
-      </motion.h1>
+      <motion.div
+      initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+       className='w-full p-10 flex items-center'>
+        {/* Heading */}
+        <h1 className="relative text-xl pr-4  text-left lg:text-3xl z-20 font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50">
+          <span className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 py-4">
+            Tutorial:
+          </span> 
+        </h1>
+        <FileSelector  selectedFile={currentFile} onFileSelect={()=>{window.location.reload()}}/>
+      </motion.div>
 
+    {Array.isArray(fileAnalysis?.analysis?.tutorial) &&
+            fileAnalysis.analysis.tutorial.length > 0 ? (
+        <>
       {/* Mobile Toggle Button */}
       {!showCodeViewer && (
         <button
@@ -83,6 +91,7 @@ function Tutorial() {
         </button>
       )}
 
+
       {/* Main Tutorial Content */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
@@ -90,8 +99,7 @@ function Tutorial() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className="relative z-10 flex justify-center items-center gap-4 w-[80%] h-[70vh]"
       >
-        {Array.isArray(fileAnalysis?.analysis?.tutorial) &&
-        fileAnalysis.analysis.tutorial.length > 0 ? (
+        
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,11 +108,7 @@ function Tutorial() {
           >
             <FileTutorial steps={fileAnalysis.analysis.tutorial} />
           </motion.div>
-        ) : (
-          <div className="relative z-20 bg-gradient-to-b h-screen flex justify-center items-center from-neutral-200 to-neutral-500 bg-clip-text py-8 text-xl font-bold text-transparent">
-            Could not generate tutorial.
-          </div>
-        )}
+
 
         {/* Code viewer for desktop */}
         <motion.div
@@ -148,6 +152,12 @@ function Tutorial() {
             />)
           }
       </motion.div>
+      </>
+              ) : (
+          <div className="relative -mt-32 z-20 w-full bg-gradient-to-b h-screen flex justify-center items-center from-neutral-200 to-neutral-500 bg-clip-text py-8 text-xl font-bold text-transparent">
+            Could not generate tutorial.
+          </div>
+        )}
     </div>
   );
 }

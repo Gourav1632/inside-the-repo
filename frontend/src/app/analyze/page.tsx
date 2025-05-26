@@ -1,8 +1,9 @@
 'use client';
 
 import { GridBackground } from '@/components/GridBackground';
-import React from 'react';
+import React,{useEffect} from 'react';
 import { motion } from 'framer-motion';
+import { ASTResult } from '@/types/repo_analysis_type';
 import {
   IconGitBranch,
   IconFileAnalytics,
@@ -15,6 +16,28 @@ import {
 } from "@tabler/icons-react"; 
 
 function Analyze() {
+
+
+    useEffect(() => {
+      const storedData = localStorage.getItem('repoAnalysis');
+      if (!storedData) return;
+  
+      try {
+        const analysis = JSON.parse(storedData);
+        const files = extractFileNames(analysis.repo_analysis.ast);
+        localStorage.setItem("fileList",JSON.stringify(files))
+      } catch (error) {
+        console.error('Failed to parse repoAnalysis:', error);
+      }
+    }, []);
+  
+    const extractFileNames = (ast: ASTResult): string[] => {
+      if (ast) {
+        return Object.keys(ast);
+      }
+      return [];
+    };
+
 const tabs = [
   {
     title: "Home",

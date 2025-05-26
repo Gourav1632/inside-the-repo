@@ -22,6 +22,10 @@ export default function Home() {
         repo_url:repoUrl,
         branch:"main"
       });
+      if (response.data.error) {
+        alert(`Error: ${response.data.error}`);
+        return; // Stop execution, don't proceed
+      }
       const analysisData = {"repo_url":repoUrl, branch:"main",...response.data};
       localStorage.clear()
       localStorage.setItem("repoAnalysis", JSON.stringify(analysisData));
