@@ -6,8 +6,11 @@ import Loading from '@/components/Loading';
 import { motion } from 'framer-motion';
 import { FileAnalysis } from '@/types/file_analysis_type';
 import FileSelector from '@/components/FileAnalysis/FileSelector';
+import { Analysis, ASTFileData } from '@/types/repo_analysis_type';
+
 
 function DependencyPage() {
+  const [fileAST, setFileAST] = useState<ASTFileData | null>(null)
   const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
   const [currentFile, setCurrentFile] = useState<string>('Choose a file to view its dependency graph.');
   const [loading, setLoading] = useState(true);
@@ -15,10 +18,18 @@ function DependencyPage() {
 
   useEffect(() => {
     const file = localStorage.getItem('lastUsedFile');
+    const storedData = localStorage.getItem('repoAnalysis');
+
+    if(!storedData){
+      setLoading(false)
+      return;
+    }
     if (!file) {
       setLoading(false);
       return;
     }
+    const parsed: Analysis = JSON.parse(storedData)
+    setFileAST(parsed.repo_analysis.ast[file])
 
     setCurrentFile(file); // also stores for display
     const storageKey = `fileAnalysis-${file}`;
@@ -29,6 +40,10 @@ function DependencyPage() {
     }
     setLoading(false);
   }, []);
+
+
+
+
 
   if (loading) return <Loading message={"Retrieving file content..."} />;
 
@@ -53,14 +68,14 @@ function DependencyPage() {
       </motion.div>
 
       <div className="relative z-10 h-full w-full">
-        {fileAnalysis && fileAnalysis?.file_graph?.nodes?.length > 0 ? (
+        {fileAnalysis && fileAST && fileAnalysis?.file_graph?.nodes?.length > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="h-full w-full"
           >
-            <DependencyGraph analysis={fileAnalysis} />
+            <DependencyGraph fileAST={fileAST} analysis={fileAnalysis} />
           </motion.div>
         ) : (
           <div className="relative -mt-32 z-20 bg-gradient-to-b h-screen flex justify-center items-center from-neutral-200 to-neutral-500 bg-clip-text py-8 text-xl font-bold text-transparent">

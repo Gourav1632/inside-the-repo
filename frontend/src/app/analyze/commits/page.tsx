@@ -93,13 +93,13 @@ function Commits() {
 
               {analysis && analysis?.top_contributors?.length > 0 && (
                 <motion.div className="z-20 h-full flex-1 w-full" variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}>
-                  <TopContributors contributors={analysis.top_contributors} />
+                  <TopContributors total_commits={analysis.total_commits_fetched} contributors={analysis.top_contributors} />
                 </motion.div>
               )}
 
               {analysis && analysis?.most_changed_files?.length > 0 && (
                 <motion.div className="z-20 h-full flex-2 w-full" variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}>
-                  <MostChangedFiles files={analysis.most_changed_files} />
+                  <MostChangedFiles total_commits={analysis.total_commits_fetched} files={analysis.most_changed_files} />
                 </motion.div>
               )}
             </motion.div>

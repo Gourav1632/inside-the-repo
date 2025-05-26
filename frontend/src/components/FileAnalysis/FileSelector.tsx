@@ -85,10 +85,10 @@ const FileSelector = ({
   };
 
   return (
-    <div className="relative z-50 font-semibold w-full max-w-[800px] text-left">
+    <div className="relative z-30 font-semibold w-full max-w-[800px] text-left">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-[#121212] text-white text-xl lg:text-3xl px-4 py-2 rounded-xl"
+        className="bg-[#121212] text-white text-xl lg:text-3xl px-4 py-2 rounded-xl break-all"
         disabled={loading}
       >
         {loading ? 'Requesting file data...' : currentSelectedFile}

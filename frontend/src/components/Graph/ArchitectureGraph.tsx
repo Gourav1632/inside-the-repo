@@ -108,7 +108,7 @@ function ArchitectureGraph() {
             {selectedNode && tooltipPos && (
               <motion.div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute z-50 bg-white shadow-xl rounded-md p-3 border border-gray-200 text-sm text-gray-800 -translate-x-1/2"
+                className="fixed z-50 bg-white shadow-xl rounded-md p-3 border border-gray-200 text-sm text-gray-800 -translate-x-1/2"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}

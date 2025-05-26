@@ -15,7 +15,6 @@ def build_per_file_graph(file_path: str, file_ast: dict) -> dict:
         "position": {"x":random.randint(0,800), "y":random.randint(0,800)}
     }
 
-    anon_counter = defaultdict(int)
 
     # Functions
     for func in file_ast.get("functions", []):
