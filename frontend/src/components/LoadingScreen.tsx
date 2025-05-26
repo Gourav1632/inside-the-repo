@@ -4,14 +4,18 @@ import { Spotlight } from "@/components/ui/spotlight-new";
 import { Cover } from "@/components/ui/cover";
 
 export default function LoadingScreen() {
-  const messages = [
-    "Collecting source code.",
-    "Analyzing code structure..",
-    "Building the architecture map...",
-    "Analysing Git history....",
-    "Testing your patience.....",
-    "Putting the pieces together......"
-  ];
+const messages = [
+  "Collecting source code.",
+  "Analyzing code structure..",
+  "Building the architecture map...",
+  "Analysing Git history....",
+  "Putting the pieces together......",
+  "Running `npm install` for the 7th time...",
+  "Asking ChatGPT for help...",
+  "Testing your patience.....",
+  "Bro... this repo *needs* therapy"
+];
+
   const message_length =  messages.length
 
   const [messageIndex, setMessageIndex] = useState(0);
@@ -35,7 +39,7 @@ export default function LoadingScreen() {
   return (
     <div className="h-screen flex flex-col justify-center items-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
       <Spotlight />
-      <h1 className="text-2xl md:text-3xl lg:text-3xl font-semibold max-w-7xl mx-auto text-center mt-6 relative z-20 py-6 bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-700 dark:from-neutral-800 dark:via-white dark:to-white transition-opacity duration-500 ease-in-out">
+      <h1 className="text-2xl text-wrap md:text-3xl lg:text-3xl font-semibold max-w-7xl mx-auto text-center mt-6 relative z-20 py-6 bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-700 dark:from-neutral-800 dark:via-white dark:to-white transition-opacity duration-500 ease-in-out">
         <Cover>{firstWord}</Cover> {restOfMessage}
       </h1>
     </div>
