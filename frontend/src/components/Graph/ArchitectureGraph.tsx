@@ -101,6 +101,7 @@ function ArchitectureGraph() {
               proOptions={proOptions}
               onNodeClick={handleNodeClick}
               nodesDraggable
+              nodesConnectable={false} 
             >
               <Controls />
             </ReactFlow>

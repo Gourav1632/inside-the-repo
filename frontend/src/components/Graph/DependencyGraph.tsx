@@ -137,6 +137,8 @@ function DependencyGraph({
             proOptions={proOptions}
             nodesDraggable
             onNodeClick={handleNodeClick}
+            nodesConnectable={false} 
+
           >
             <Controls />
           </ReactFlow>

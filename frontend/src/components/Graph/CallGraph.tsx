@@ -26,6 +26,8 @@ function CallGraph({analysis}:{analysis:FileAnalysis}) {
         fitView
         proOptions={proOptions}
         nodesDraggable
+        nodesConnectable={false} 
+
       >
         <Controls />
       </ReactFlow>

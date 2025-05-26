@@ -122,11 +122,11 @@ useEffect(() => {
         <FileSelector  selectedFile={currentFile} onFileSelect={()=>{window.location.reload()}}/>
       </motion.div>
 
-    <div className='flex flex-col justify-center items-center h-[80vh]'>
+<div className='fixed inset-x-0 bottom-20 top-[120px] flex flex-col items-center px-4 overflow-hidden'>
       {/* Chat History */}
       <div
         ref={chatRef}
-        className="h-[60vh] rounded-xl  z-10 px-4 overflow-y-auto w-full max-w-3xl  mb-4 space-y-4 custom-scrollbar"
+        className="h-full rounded-xl  z-10 px-4 overflow-y-auto w-full max-w-3xl  mb-4 space-y-4 custom-scrollbar"
       >
         {chat.map((msg, index) => (
           <div
