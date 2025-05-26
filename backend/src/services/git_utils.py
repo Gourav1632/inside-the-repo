@@ -187,3 +187,27 @@ def get_repo_git_analysis(repo: str, branch: str = "main") -> Dict[str, Any]:
         "first_commit_date": recent_commits[-1]["commit"]["author"]["date"] if recent_commits else None,
         "last_commit_date": recent_commits[0]["commit"]["author"]["date"] if recent_commits else None,
     }
+
+
+def is_repo_private(repo_url: str) -> bool:
+    """
+    Checks whether a GitHub repository is private or not.
+    Returns True if private, False if public.
+    """
+    try:
+        owner, repo_name = extract_owner_repo(repo_url)
+        api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
+
+        response = requests.get(api_url)
+
+        if response.status_code == 404:
+            return True  
+        elif response.status_code == 200:
+            return response.json().get("private", True) 
+        else:
+            print(f"Unexpected status code {response.status_code}: {response.text}")
+            return True  # Fail-safe: assume private
+
+    except Exception as e:
+        print(f"Error checking repo visibility: {e}")
+        return True  # Fail-safe

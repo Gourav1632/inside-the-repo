@@ -3,11 +3,10 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from fastapi.concurrency import run_in_threadpool
 import asyncio
-
 from src.services.ast_parser import parse_code
 from src.services.per_file_graph_builder import build_per_file_graph, build_call_graph
-from src.services.summarizer import analyze_code_with_claude
-from src.services.git_utils import get_repo_git_analysis
+from src.services.summarizer import analyze_code
+from src.services.git_utils import get_repo_git_analysis, is_repo_private
 from src.services.ask_ai import askAI, conversation_memory
 
 router = APIRouter()
@@ -35,6 +34,9 @@ class FileGraphRequest(BaseModel):
 @router.post("/api/analyze")
 async def get_ast(req: RepoRequest):
     try:
+        if is_repo_private(req.repo_url):
+            return {"error": "Repository is private or inaccessible. Please ensure it is public."}
+
         ast_task = asyncio.create_task(run_in_threadpool(parse_code, req.repo_url, req.branch))
         git_metadata_task = asyncio.create_task(run_in_threadpool(get_repo_git_analysis, req.repo_url, req.branch))
 
@@ -57,7 +59,7 @@ async def generate_file_graph(req: FileGraphRequest):
 
     file_graph_task = asyncio.create_task(run_in_threadpool(build_per_file_graph, req.file_path, req.file_ast))
     call_graph_task = asyncio.create_task(run_in_threadpool(build_call_graph, req.file_ast))
-    analysis_task = asyncio.create_task(run_in_threadpool(analyze_code_with_claude, req.repo_url, req.branch, req.file_path))
+    analysis_task = asyncio.create_task(run_in_threadpool(analyze_code, req.repo_url, req.branch, req.file_path))
 
     file_graph, call_graph, analysis = await asyncio.gather(file_graph_task, call_graph_task, analysis_task)
 
