@@ -6,8 +6,9 @@ import { Analysis } from '@/components/FileAnalysis/Analysis';
 import Loading from '@/components/Loading';
 import { motion } from 'framer-motion';
 import { FileAnalysis as file_analysis } from '@/types/file_analysis_type';
-import { ASTFileData } from '@/types/repo_analysis_type';
+import { Analysis as repo_analysis, ASTFileData } from '@/types/repo_analysis_type';
 import FileSelector from '@/components/FileAnalysis/FileSelector';
+import { getItem } from '@/utils/indexedDB';
 
 function FileAnalysis() {
   const [fileAnalysis, setFileAnalysis] = useState<file_analysis | null>(null);
@@ -17,17 +18,16 @@ function FileAnalysis() {
   const [showCodeViewer, setShowCodeViewer] = useState(false);
 
   useEffect(() => {
-    setLoading(true)
-    const file = localStorage.getItem("lastUsedFile");
+    async function fetchFileAnalysis(){
+    const file = await getItem<string>("lastUsedFile");
     if (!file) {
       setLoading(false);
       return;
     }
 
-    const storedData = localStorage.getItem("repoAnalysis");
-    if (file && storedData) {
-      const parsed = JSON.parse(storedData);
-      const astForFile = parsed?.repo_analysis?.ast?.[file];
+    const analysis = await getItem<repo_analysis>("repoAnalysis");
+    if (file && analysis) {
+      const astForFile = analysis?.repo_analysis?.ast?.[file];
 
       setCurrentFile(file);
       if (astForFile) {
@@ -38,13 +38,15 @@ function FileAnalysis() {
     }
 
     const storageKey = `fileAnalysis-${file}`;
-    const stored = localStorage.getItem(storageKey);
+    const file_analysis = await getItem<file_analysis>(storageKey);
 
-    if (stored) {
-      setFileAnalysis(JSON.parse(stored));
+    if (file_analysis) {
+      setFileAnalysis(file_analysis);
     }
 
     setLoading(false);
+  }
+  fetchFileAnalysis();
   }, []);
 
   if (loading) return <div><Loading message={"Retrieving file analysis..."} /></div>;

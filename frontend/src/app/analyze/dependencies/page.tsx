@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { FileAnalysis } from '@/types/file_analysis_type';
 import FileSelector from '@/components/FileAnalysis/FileSelector';
 import { Analysis, ASTFileData } from '@/types/repo_analysis_type';
+import { getItem } from '@/utils/indexedDB';
 
 
 function DependencyPage() {
@@ -17,10 +18,11 @@ function DependencyPage() {
 
 
   useEffect(() => {
-    const file = localStorage.getItem('lastUsedFile');
-    const storedData = localStorage.getItem('repoAnalysis');
+    async function fetchDependencyGraph(){
+    const file = await getItem<string>('lastUsedFile');
+    const analysis = await getItem<Analysis>('repoAnalysis');
 
-    if(!storedData){
+    if(!analysis){
       setLoading(false)
       return;
     }
@@ -28,17 +30,18 @@ function DependencyPage() {
       setLoading(false);
       return;
     }
-    const parsed: Analysis = JSON.parse(storedData)
-    setFileAST(parsed.repo_analysis.ast[file])
+    setFileAST(analysis.repo_analysis.ast[file])
 
     setCurrentFile(file); // also stores for display
     const storageKey = `fileAnalysis-${file}`;
-    const stored = localStorage.getItem(storageKey);
+    const file_analysis = await getItem<FileAnalysis>(storageKey);
 
-    if (stored) {
-      setFileAnalysis(JSON.parse(stored));
+    if (file_analysis) {
+      setFileAnalysis(file_analysis);
     }
     setLoading(false);
+  }
+  fetchDependencyGraph();
   }, []);
 
 

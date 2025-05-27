@@ -8,6 +8,7 @@ import { getLayoutedGraph } from '@/components/Graph/Layout';
 import Loading from '../Loading';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Analysis, ASTFileData, ASTResult } from '@/types/repo_analysis_type';
+import { getItem } from '@/utils/indexedDB';
 
 function ArchitectureGraph() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -31,14 +32,16 @@ function ArchitectureGraph() {
 
   useEffect(() => {
     setLoading(true);
-    const storedData = localStorage.getItem('repoAnalysis');
-    if (!storedData) {
+    async function fetchAnalysis() {
+    const analysis = await getItem<Analysis>('repoAnalysis');
+    if (!analysis) {
       setMessage("Architecture map not found. Please search for a repository.");
       return;
     }
-    const parsed: Analysis = JSON.parse(storedData);
-    setAnalysis(parsed);
+    setAnalysis(analysis);
     setLoading(false);
+  }
+  fetchAnalysis()
   }, []);
 
   const { nodes, edges } = analysis

@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import {motion} from "framer-motion"
 import { FileAnalysis } from '@/types/file_analysis_type';
 import FileSelector from '@/components/FileAnalysis/FileSelector';
+import { getItem, setItem } from '@/utils/indexedDB';
 
 function Assistant() {
   const [currentFile, setCurrentFile] = useState<string>('Choose a file to ask the assistant.');
@@ -23,31 +24,39 @@ function Assistant() {
   const chatRef = useRef<HTMLDivElement | null>(null);
 
 useEffect(() => {
-  const file = localStorage.getItem('lastUsedFile');
-  const storedHistoryID = localStorage.getItem('history_id');
+  async function fetchLastUsedFile() {
+    try {
+      const file = await getItem<string>('lastUsedFile');
+      const storedHistoryID = await getItem<string>('history_id');
 
-  if (storedHistoryID) {
-    setHistoryID(storedHistoryID);
+      if (storedHistoryID) {
+        setHistoryID(storedHistoryID);
+      }
+
+      if (!file) {
+        setMessage('No file selected. Please select a file from architecture map.');
+        setLoading(false);
+        return;
+      }
+
+      setCurrentFile(file);
+
+      const fileAnalysis = await getItem<FileAnalysis>(`fileAnalysis-${file}`);
+      if (fileAnalysis) {
+        setCode(JSON.stringify(fileAnalysis.analysis.code));
+      } else {
+        setMessage('No analysis found for selected file.');
+      }
+    } catch (error) {
+      setMessage('Failed to load file data. Please try again.');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }
+  fetchLastUsedFile();
+}, []);
 
-  if (!file) {
-    setMessage('No file selected. Please select a file from architecture map.');
-    setLoading(false);
-    return;
-  }
-
-  setCurrentFile(file);
-
-  const stored = localStorage.getItem(`fileAnalysis-${file}`);
-  if (stored) {
-    const parsed: FileAnalysis = JSON.parse(stored);
-    setCode(JSON.stringify(parsed.analysis.code)); 
-  } else {
-    setMessage('No analysis found for selected file.');
-  }
-
-  setLoading(false);
-}, []); 
 
 
   // Scroll to bottom on new message
@@ -76,7 +85,7 @@ useEffect(() => {
 
 
       if (!historyID && data.history_id) {
-        localStorage.setItem('history_id',data.history_id)
+        await setItem('history_id',data.history_id)
         setHistoryID(data.history_id);
       }
 

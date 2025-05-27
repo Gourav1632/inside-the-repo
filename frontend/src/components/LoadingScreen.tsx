@@ -2,46 +2,45 @@
 import React, { useEffect, useState } from "react";
 import { Spotlight } from "@/components/ui/spotlight-new";
 import { Cover } from "@/components/ui/cover";
+import { progressRoute } from "@/utils/APIRoutes";
 
-export default function LoadingScreen() {
-const messages = [
-  "Collecting source code.",
-  "Analyzing code structure..",
-  "Building the architecture map...",
-  "Analysing Git history....",
-  "Putting the pieces together......",
-  "Running `npm install` for the 7th time...",
-  "Asking ChatGPT for help...",
-  "Testing your patience.....",
-  "Bro... this repo *needs* therapy"
-];
+export default function LoadingScreen({requestId}:{requestId:string}) {
+    const [progressMessage, setProgressMessage] = useState("");
 
-  const message_length =  messages.length
+    useEffect(() => {
+    const eventSource = new EventSource(`${progressRoute}?request_id=${requestId}`);
 
-  const [messageIndex, setMessageIndex] = useState(0);
+    eventSource.onmessage = (event) => {
+      const progressMessage = event.data;
+      setProgressMessage(progressMessage);
+    };
 
-  useEffect(() => {
-    if (messageIndex < message_length - 1) {
-      const timeout = setTimeout(() => {
-        setMessageIndex((prev) => prev + 1);
-      },5000); 
-      return () => clearTimeout(timeout);
-    }
-  }, [messageIndex,message_length]);
+    eventSource.addEventListener('done', () => {
+      eventSource.close();
+    });
 
-  const currentMessage = messages[messageIndex];
-  const firstSpaceIndex = currentMessage.indexOf(" ");
-  const firstWord = firstSpaceIndex === -1 ? currentMessage : currentMessage.slice(0, firstSpaceIndex);
-  const restOfMessage = firstSpaceIndex === -1 ? "" : currentMessage.slice(firstSpaceIndex);
+    eventSource.onerror = () => {
+      console.error('SSE connection error');
+      eventSource.close();
+    };
+
+    return () => eventSource.close();
+  }, [requestId]);
+
+
+  const firstSpaceIndex = progressMessage.indexOf(" ");
+  const firstWord = firstSpaceIndex === -1 ? progressMessage : progressMessage.slice(0, firstSpaceIndex);
+  const restOfMessage = firstSpaceIndex === -1 ? "" : progressMessage.slice(firstSpaceIndex);
 
 
 
-  return (
-    <div className="h-screen flex flex-col justify-center items-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
-      <Spotlight />
-      <h1 className="text-2xl text-wrap md:text-3xl lg:text-3xl font-semibold max-w-7xl mx-auto text-center mt-6 relative z-20 py-6 bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-700 dark:from-neutral-800 dark:via-white dark:to-white transition-opacity duration-500 ease-in-out">
-        <Cover>{firstWord}</Cover> {restOfMessage}
-      </h1>
-    </div>
-  );
+return (
+  <div className="h-screen flex flex-col justify-center items-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden px-4">
+    <Spotlight />
+    <h1 className="text-2xl px-4 md:text-3xl lg:text-3xl font-semibold max-w-7xl mx-auto text-center mt-6 relative z-20 py-6 bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-700 dark:from-neutral-800 dark:via-white dark:to-white transition-opacity duration-500 ease-in-out">
+      <Cover>{firstWord}</Cover> 
+      <span style={{wordBreak: 'break-word'}}>{restOfMessage}</span>
+    </h1>
+  </div>
+);
 }

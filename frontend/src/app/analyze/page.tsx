@@ -3,7 +3,7 @@
 import { GridBackground } from '@/components/GridBackground';
 import React,{useEffect} from 'react';
 import { motion } from 'framer-motion';
-import { ASTResult } from '@/types/repo_analysis_type';
+import { Analysis, ASTResult } from '@/types/repo_analysis_type';
 import {
   IconGitBranch,
   IconFileAnalytics,
@@ -14,21 +14,24 @@ import {
   IconRouteSquare2,
   IconHome,
 } from "@tabler/icons-react"; 
+import { getItem, setItem } from '@/utils/indexedDB';
 
 function Analyze() {
 
 
-    useEffect(() => {
-      const storedData = localStorage.getItem('repoAnalysis');
-      if (!storedData) return;
-  
-      try {
-        const analysis = JSON.parse(storedData);
-        const files = extractFileNames(analysis.repo_analysis.ast);
-        localStorage.setItem("fileList",JSON.stringify(files))
-      } catch (error) {
-        console.error('Failed to parse repoAnalysis:', error);
+    useEffect( () => {
+      const setFileList = async ()=>{
+        const analysis = await getItem<Analysis>("repoAnalysis")
+        if (!analysis) return;
+    
+        try {
+          const files = extractFileNames(analysis.repo_analysis.ast);
+          await setItem<string[]>("fileList",files)
+        } catch (error) {
+          console.error('Failed to parse repoAnalysis:', error);
+        }
       }
+      setFileList();
     }, []);
   
     const extractFileNames = (ast: ASTResult): string[] => {

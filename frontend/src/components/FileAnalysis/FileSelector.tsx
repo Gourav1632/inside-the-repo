@@ -3,6 +3,8 @@ import axios from 'axios';
 import { fileAnalysisRoute } from '@/utils/APIRoutes';
 import { Analysis } from '@/types/repo_analysis_type';
 import { askAssistantRoute } from '@/utils/APIRoutes';
+import { getItem, removeItem, setItem } from '@/utils/indexedDB';
+import { FileAnalysis } from '@/types/file_analysis_type';
 
 const FileSelector = ({
   selectedFile,
@@ -18,20 +20,23 @@ const FileSelector = ({
   const [currentSelectedFile, setCurrentSelectedFile] = useState(selectedFile);
 
   useEffect(() => {
-    const storedData = localStorage.getItem('repoAnalysis');
-    if (storedData) {
-      setAnalysis(JSON.parse(storedData));
+    async function fetchAnalysis(){
+    const analysis = await getItem<Analysis>('repoAnalysis');
+    if (analysis) {
+      setAnalysis(analysis);
     }
 
-    const files = localStorage.getItem('fileList');
+    const files = await getItem<string[]>('fileList');
     if (files) {
-      setFileList(JSON.parse(files));
+      setFileList(files);
     }
+  }
+  fetchAnalysis();
   }, []);
 
   const handleFileClick = async (file: string) => {
     const storageKey = `fileAnalysis-${file}`;
-    const cached = localStorage.getItem(storageKey);
+    const cached = await getItem<FileAnalysis>(storageKey);
     let response;
 
     setLoading(true); 
@@ -39,7 +44,7 @@ const FileSelector = ({
     if (!cached && analysis) {
 
       // Reset chat history id for current selected file
-      const history_id = localStorage.getItem('history_id');
+      const history_id = await getItem<string>('history_id');
       if (history_id) {
         try{
           const response = await axios.post(askAssistantRoute, {
@@ -49,7 +54,7 @@ const FileSelector = ({
             code: ""
           });
           console.log(response.data.message);
-          localStorage.removeItem('history_id');
+          await removeItem('history_id');
         }catch(e){
           console.log("Error resetting history id:",e)
         }
@@ -66,7 +71,7 @@ const FileSelector = ({
           file_path: file,
           file_ast,
           repo_url: analysis.repo_url,
-          branch: 'main',
+          branch: analysis.branch,
         });
     } catch (e) {
             console.error(`Error fetching ${file} data: ${e}`);
@@ -74,10 +79,10 @@ const FileSelector = ({
             return;
     }
         if (response?.data) {
-        localStorage.setItem(storageKey, JSON.stringify(response.data));
+        await setItem(storageKey, response.data);
     }
 }
-    localStorage.setItem('lastUsedFile', file);
+    await setItem('lastUsedFile', file);
     setCurrentSelectedFile(file);
     setLoading(false); 
     setIsOpen(false)

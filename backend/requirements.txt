@@ -12,3 +12,5 @@ tree_sitter_java==0.23.5
 tree_sitter_javascript==0.23.1
 tree_sitter_python==0.23.6
 tree_sitter_typescript==0.23.2
+google-generativeai==0.8.5
+sse-starlette-2.3.5

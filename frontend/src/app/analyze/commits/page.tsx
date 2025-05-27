@@ -9,6 +9,8 @@ import { MostChangedFiles } from '@/components/Git/MostChangedFiles';
 import { ProjectSummary } from '@/components/Git/ProjectSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GitAnalysis } from '@/types/git_analysis_type';
+import { getItem } from '@/utils/indexedDB';
+import { Analysis } from '@/types/repo_analysis_type';
 
 function Commits() {
   const [analysis, setAnalysis] = useState<GitAnalysis | null>(null);
@@ -16,17 +18,19 @@ function Commits() {
   const [message, setMessage] = useState("Retrieving git analysis...");
 
   useEffect(() => {
+    async function fetchGitAnalysis(){
     setLoading(true);
-    const storedData = localStorage.getItem('repoAnalysis');
-    if (!storedData) {
+    const analysis = await getItem<Analysis>('repoAnalysis');
+    if (!analysis) {
       setMessage("Git analysis not found.");
       setLoading(false);
       return;
     }
 
-    const repo_analysis = JSON.parse(storedData);
-    setAnalysis(repo_analysis.git_analysis);
+    setAnalysis(analysis.git_analysis);
     setLoading(false);
+  }
+  fetchGitAnalysis()
   }, []);
 
   return (

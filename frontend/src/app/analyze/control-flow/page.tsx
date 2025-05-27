@@ -6,6 +6,7 @@ import Loading from '@/components/Loading';
 import { motion } from 'framer-motion';
 import { FileAnalysis } from '@/types/file_analysis_type';
 import FileSelector from '@/components/FileAnalysis/FileSelector';
+import { getItem } from '@/utils/indexedDB';
 
 function ControlFlow() {
   const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
@@ -14,7 +15,8 @@ function ControlFlow() {
   const [message, setMessage] = useState('Retrieving file contents...');
 
   useEffect(() => {
-    const file = localStorage.getItem('lastUsedFile');
+    async function fetchCallGraph(){
+    const file = await getItem<string>('lastUsedFile');
     if (!file) {
       setMessage('No file selected. Please select a file from architecture map.');
       setLoading(false);
@@ -23,12 +25,14 @@ function ControlFlow() {
 
     setCurrentFile(file);
     const storageKey = `fileAnalysis-${file}`;
-    const stored = localStorage.getItem(storageKey);
+    const file_analysis = await getItem<FileAnalysis>(storageKey);
 
-    if (stored) {
-      setFileAnalysis(JSON.parse(stored));
+    if (file_analysis) {
+      setFileAnalysis(file_analysis);
     }
     setLoading(false);
+  }
+  fetchCallGraph();
   }, []);
 
   if (loading) return <Loading message={message} />;

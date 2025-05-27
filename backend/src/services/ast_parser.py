@@ -13,6 +13,18 @@ from src.config.language_node_maps import language_node_maps
 from src.services.file_graph_generator import build_dependency_graph
 from src.services.git_utils import extract_owner_repo,get_repo_tree,download_file,get_file_git_info
 from src.services.parse_utils import extract_import_data
+from src.shared.progress import progress_data
+
+
+LANGUAGE_LOADING_MESSAGES = {
+    "cpp": "C++ detected — where one wrong pointer ruins your day 😅",
+    "c": "C detected — manual memory management zone 🧠💥",
+    "java": "Java detected. Hold tight, this might take a while ⏳",
+    "python": "Python detected. Smooth ride incoming 🐍",
+    "javascript": "JavaScript detected — semicolons are optional, bugs are not 😜",
+    "typescript": "TypeScript detected — now with types and twice the compile time ⌛",
+    "tsx": "TSX detected — React and TypeScript? Brave soul 👨‍🚀"
+}
 
 
 LANGUAGE_GRAMMARS = {
@@ -114,8 +126,9 @@ def get_node_name(node):
 
     return node.text.decode()
 
-def parse_code(repo_url: str, branch: str):
+def parse_code(repo_url: str, branch: str,request_id: str):
     print("Parsing repo ...")
+    progress_data[request_id] = "Collecting source code..."
     owner, repo = extract_owner_repo(repo_url)
     tree = get_repo_tree(owner,repo, branch)
     print("Got the repo tree")
@@ -129,7 +142,7 @@ def parse_code(repo_url: str, branch: str):
             
             path = item["path"]
             norm_path = os.path.normpath(path)
-
+            progress_data[request_id] = f"Scanning {norm_path}..."
             language = detect_file_language(path)
             if not language or language not in LANGUAGE_GRAMMARS:
                 continue
@@ -224,6 +237,7 @@ def parse_code(repo_url: str, branch: str):
                 print(f"Error processing {path}: {e}")
             
         print("Repo parsed successfully...")
+        progress_data[request_id] = "Building architecture map..."
         graph = build_dependency_graph(result)
         return {
             "ast":result,

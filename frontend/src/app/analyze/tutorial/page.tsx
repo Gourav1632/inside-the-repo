@@ -7,6 +7,7 @@ import { FileCodeViewer } from '@/components/FileAnalysis/FileCodeViewer';
 import { motion } from 'framer-motion';
 import { FileAnalysis, TutorialStep } from '@/types/file_analysis_type';
 import FileSelector from '@/components/FileAnalysis/FileSelector';
+import { getItem } from '@/utils/indexedDB';
 
 function Tutorial() {
   const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
@@ -16,7 +17,8 @@ function Tutorial() {
   const [showCodeViewer, setShowCodeViewer] = useState(false);
 
   useEffect(() => {
-    const file = localStorage.getItem('lastUsedFile');
+    async function fetchTutorial(){
+    const file = await getItem<string>('lastUsedFile');
     if (!file) {
       setMessage('No file selected. Please select a file from architecture map.');
       setLoading(false);
@@ -24,12 +26,14 @@ function Tutorial() {
     }
     setCurrentFile(file);
     const storageKey = `fileAnalysis-${file}`;
-    const stored = localStorage.getItem(storageKey);
+    const file_analysis = await getItem<FileAnalysis>(storageKey);
 
-    if (stored) {
-      setFileAnalysis(JSON.parse(stored));
+    if (file_analysis) {
+      setFileAnalysis(file_analysis);
     }
     setLoading(false);
+  }
+  fetchTutorial()
   }, []);
 
   const extractHighlightedLines = (): number[] => {

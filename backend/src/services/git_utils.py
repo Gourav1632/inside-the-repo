@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
-
-
-
+from src.shared.progress import progress_data
 
 env_path = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(dotenv_path=env_path)
@@ -108,7 +106,7 @@ def get_file_git_info(owner: str, repo: str, branch: str, filepath: str) -> Dict
         "recent_commits": recent_commits
     }
 
-def get_repo_git_analysis(repo: str, branch: str = "main") -> Dict[str, Any]:
+def get_repo_git_analysis(repo: str, branch: str ,request_id:str) -> Dict[str, Any]:
     print("Getting git analysis...")
     owner, repo_name = extract_owner_repo(repo)
     headers = {"Accept": "application/vnd.github+json"}
@@ -131,6 +129,7 @@ def get_repo_git_analysis(repo: str, branch: str = "main") -> Dict[str, Any]:
         total_commits = 1
     print("Total commits fetched: ",total_commits)
 
+
     # 2. Fetch recent 50 commits only for analysis
     commits_resp = requests.get(f"{base_url}/commits", headers=headers, params={"sha": branch, "per_page": 50})
     commits_resp.raise_for_status()
@@ -143,6 +142,7 @@ def get_repo_git_analysis(repo: str, branch: str = "main") -> Dict[str, Any]:
     recent_commit_summaries = []
 
     for i, commit in enumerate(recent_commits):
+        
         date_str = commit["commit"]["author"]["date"]
         date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").date()
         commit_activity[str(date)] += 1
@@ -151,6 +151,20 @@ def get_repo_git_analysis(repo: str, branch: str = "main") -> Dict[str, Any]:
         author_stats[author] += 1
 
         sha = commit["sha"]
+        message = commit["commit"]["message"]
+        if(i < 10):
+            if total_commits <= 50:
+                progress_data[request_id] = f"Seriously, bro? You want me to analyze just {total_commits} commits?"
+            elif total_commits > 50 and total_commits < 500:
+                progress_data[request_id] = f"Digging through some history! Found about {total_commits} commits."
+            else:
+                progress_data[request_id] = f"{total_commits} commits? Yeah, I don't have all day. I'll just look at the last 50."
+        else:                
+            if "final commit" in message or "last commit" in message:
+                progress_data[request_id] = f"Ah, the {message}. Heard that one before. Let's see how long *this* one lasts."
+            else:
+                progress_data[request_id] = f"Analysing commit {sha}..."
+
         # Fetch files changed for this commit
         detail_resp = requests.get(f"{base_url}/commits/{sha}", headers=headers)
         if detail_resp.status_code == 200:
@@ -198,7 +212,13 @@ def is_repo_private(repo_url: str) -> bool:
         owner, repo_name = extract_owner_repo(repo_url)
         api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
 
-        response = requests.get(api_url)
+        headers = {
+            "Accept": "application/vnd.github+json"
+        }
+        if GITHUB_TOKEN:
+            headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+
+        response = requests.get(api_url, headers=headers)
 
         if response.status_code == 404:
             return True  
@@ -211,3 +231,33 @@ def is_repo_private(repo_url: str) -> bool:
     except Exception as e:
         print(f"Error checking repo visibility: {e}")
         return True  # Fail-safe
+
+
+def branch_exists(repo_url: str, branch: str = None) -> bool:
+    """
+    Checks whether a branch exists in the given GitHub repository.
+    Returns True if branch exists, False otherwise.
+    """
+    print(f"Checking branch existence for repo: {repo_url}, branch: {branch}")
+    try:
+        owner, repo_name = extract_owner_repo(repo_url)
+        api_url = f"https://api.github.com/repos/{owner}/{repo_name}/branches/{branch}"
+
+        headers = {}
+        if GITHUB_TOKEN:
+            headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+
+        response = requests.get(api_url, headers=headers)
+
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 404:
+            return False
+        else:
+            print(f"Unexpected status code {response.status_code}: {response.text}")
+            return False
+
+    except Exception as e:
+        print(f"Error checking branch existence: {e}")
+        return False
+

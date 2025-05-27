@@ -33,7 +33,6 @@ def build_dependency_graph(ast_dict):
                     continue
 
                 import_path = os.path.normpath(source_module)
-                print(import_path)
                 source_file = os.path.splitext(import_path)[0]
 
                 if source_file in ast_files_no_ext:
