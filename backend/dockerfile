@@ -1,17 +1,18 @@
 FROM python:3.11-slim
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install required system packages
 RUN apt-get update && apt-get install -y gcc git && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your app code
+# Copy application source code
 COPY src/ ./src/
 
-# Start the FastAPI app
+# Run the application using Uvicorn
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+

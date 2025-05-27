@@ -11,6 +11,7 @@ from src.services.ask_ai import askAI, conversation_memory
 import traceback
 from fastapi.responses import StreamingResponse
 from src.shared.progress import progress_data
+from fastapi import Request
 
 router = APIRouter()
 
@@ -42,11 +43,15 @@ class VerifyRequest(BaseModel):
 # === Routes ===
 
 @router.get("/api/progress")
-async def progress(request_id: str):
+async def progress(request:Request ,request_id: str):
     async def event_generator():
         last_message = None
         while True:
+            if await request.is_disconnected(): 
+                break  # ✅ client closed browser tab or stream
             progress = progress_data.get(request_id, "Waiting...")
+            if progress == "done":
+                break  # ✅ Exit the loop when done
             if progress != last_message:
                 yield f"data: {progress}\n\n"
                 last_message = progress
@@ -98,6 +103,7 @@ async def get_ast(req: RepoRequest):
         git_metadata_task = asyncio.create_task(run_in_threadpool(get_repo_git_analysis, req.repo_url, req.branch, request_id))
         progress_data[request_id] = "Putting the final pieces. Hope it was worth the wait (it probably wasn't)."
         ast, git_metadata = await asyncio.gather(ast_task, git_metadata_task)
+        progress_data[request_id] = "done"
 
         return {
             "repo_analysis": ast,
@@ -109,7 +115,6 @@ async def get_ast(req: RepoRequest):
         return {"error": str(e)}
 
     finally:
-        # Ensure cleanup happens even on error
         if request_id in progress_data:
             del progress_data[request_id]
 
